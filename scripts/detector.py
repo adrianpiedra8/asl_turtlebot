@@ -69,10 +69,27 @@ class Detector:
         self.object_labels = load_object_labels(PATH_TO_LABELS)
 
         self.tf_listener = TransformListener()
+        self.tfBuffer = tf2_ros.Buffer()
+
+        while True:
+            try:
+                # notably camera_link and not camera_depth_frame below, not sure why
+                self.raw_base_to_camera = self.tfBuffer.lookup_transform("base_footprint", "base_scan", rospy.Time()).transform
+                break
+            except tf2_ros.LookupException:
+                rate.sleep()
+        b2c_rotation = self.raw_base_to_camera.rotation
+        b2c_translation = self.raw_base_to_camera.translation
+        b2c_tf_theta = get_yaw_from_quaternion(rotation)
+        self.base_to_camera = [b2c_translation.x,
+                               b2c_translation.y,
+                               b2c_tf_theta]
+
         rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/image_raw/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
+        rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
 
     def run_detection(self, img):
         """ runs a detection method in a given image """
@@ -145,6 +162,10 @@ class Detector:
         y = (v - self.cy)/self.fy
         z = 1
 
+        x /= np.linalg.norm(np.array([x, y, z]))
+        y /= np.linalg.norm(np.array([x, y, z]))
+        z /= np.linalg.norm(np.array([x, y, z]))
+
         return (x,y,z)
 
     def estimate_distance_from_thetas(self, thetaleft, thetaright, ranges):
@@ -178,12 +199,41 @@ class Detector:
             dist = 0
         
         return dist
+
     def estimate_distance_from_function(self, box_height):
         
         dist_function = ((box_height - 149.46)/-5.6858) * 25.4
         print("Ryan's D: " + str(dist_function) + "mm")
 
         return None
+
+    def estimate_obj_pos_in_world(dist, ucen, vcen):
+        
+        (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen)
+
+        (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+        x_w2b_W = translation[0]
+        y_w2b_W = translation[1]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        theta = euler[2]
+        
+        R_B2W = np.array([[np.cos(theta), -np.sin(theta)],
+                          [np.sin(theta),  np.cos(theta)]])
+        R_W2B = R_B2W.T
+        R_B2C = np.array([[np.cos(self.base_to_camera[2]), -np.sin(self.base_to_camera[2])],
+                          [np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])]])
+        R_C2B = R_B2C.T
+
+        pos_w2b_W = np.array([x_w2b_W, y_w2b_W]).T 
+
+        pos_b2c_B = np.array([self.base_to_camera[0], self.base_to_camera[1]]).T
+        pos_b2c_C = R_B2C.dot(pos_b2c_B)
+        pos_c2o_C = dist*np.array([x_hat_C, z_hat_C]).T
+        pos_b2o_C = pos_b2c_C + pos_c2o_C
+
+        pos_W = R_B2W.dot(R_C2B).dot(pos_b2o_C) + pos_w2b_W
+
+        return pos_W
 
     def camera_callback(self, msg):
         """ callback for camera images """
@@ -246,11 +296,11 @@ class Detector:
                 box_height = np.abs(ymax - ymin)
 
                 if cl == 13:
-                    print("DETECTED STOP SIGN!")
+                    # print("DETECTED STOP SIGN!")
                     obj_height = 64 #mm
                     est_dist_flag = True
                 elif cl == 17:
-                    print("DETECTED CAT!")
+                    # print("DETECTED CAT!")
                     obj_height = 113
                     est_dist_flag = True
                 else:
@@ -260,6 +310,7 @@ class Detector:
 
                 # if cl == 'stop sign':
                 dist = self.estimate_distance_from_image(box_height, obj_height, est_dist_flag)
+                pos_obj_W = self.estimate_obj_pos_in_world(dist, xcen, ycen)
                 # else:
                 #     dist = self.estimate_distance_from_thetas(thetaleft, thetaright, img_laser_ranges)
 
@@ -276,6 +327,7 @@ class Detector:
                 object_msg.thetaleft = thetaleft
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
+                object_msg.location_W = pos_obj_W
                 self.object_publishers[cl].publish(object_msg)
 
         # displays the camera image
