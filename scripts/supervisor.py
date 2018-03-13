@@ -22,6 +22,9 @@ STOP_MIN_DIST = .5
 # time taken to cross an intersection
 CROSSING_TIME = 3
 
+# time taken to rescue an animal
+ANIMAL_RESCUE_TIME = 3
+
 # state machine modes, not all implemented
 class Mode(Enum):
     IDLE = 1
@@ -29,7 +32,8 @@ class Mode(Enum):
     STOP = 3
     CROSS = 4
     NAV = 5
-    MANUAL = 6
+    EXPLORE = 6
+    RESCUE = 7
 
 class Supervisor:
     """ the state machine of the turtlebot """
@@ -51,12 +55,18 @@ class Supervisor:
         self.mode = Mode.IDLE
         self.last_mode_printed = None
 
+        # queue of animals in need of rescue
+        self.animal_rescue_queue = []
+
         self.nav_goal_publisher = rospy.Publisher('/cmd_nav', Pose2D, queue_size=10)
         self.pose_goal_publisher = rospy.Publisher('/cmd_pose', Pose2D, queue_size=10)
         self.cmd_vel_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        # self.rescued_animal_publisher = rospy.Publisher('/rescued_animal', RescuedAnimal, queue_size=10)
 
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
+        rospy.Subscriber('/detector/dog', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/cat', DetectedObject, self.animal_detected_callback)
 
         self.trans_listener = tf.TransformListener()
 
@@ -81,6 +91,22 @@ class Supervisor:
         # if close enough and in nav mode, stop
         if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
             self.init_stop_sign()
+
+    def animal_detected_callback(self, msg):
+        """ callback for when the detector has found an animal """
+
+        # check parameters to determine if this is a new animal
+        # if it is a new animal, add it to the animal rescue queue
+        animal_type = msg.name
+        self.animal_rescue_queue.append(animal_type)
+
+        # if in explore mode, tag the animal
+        if self.mode == Mode.EXPLORE:
+            self.tag_animal(animal_type)
+
+        # if in rescue mode, rescue the animal
+        elif self.mode == Mode.RESCUE:
+            self.rescue_animal(animal_type)
 
     def go_to_pose(self):
         """ sends the current desired pose to the pose controller """
@@ -135,6 +161,25 @@ class Supervisor:
 
         return (self.mode == Mode.CROSS and (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
 
+    def tag_animal(self, animal_type):
+        """ tags an animal in the map """
+        
+        return
+
+    def rescue_animal(self, animal_type):
+        """ rescues an animal """
+        
+        # navigate to the animal
+
+        # stop at the animal for a fixed amount of time
+        rospy.sleep(ANIMAL_RESCUE_TIME)
+
+        # remove the animal from the rescue queue
+        del self.animal_rescue_queue[0]
+
+        # print message that animal was rescued
+        print "Rescued a " + animal_type
+
     def loop(self):
         """ the main loop of the robot. At each iteration, depending on its
         mode (i.e. the finite state machine's state), if takes appropriate
@@ -159,12 +204,13 @@ class Supervisor:
             # send zero velocity
             self.stay_idle()
 
-        elif self.mode == Mode.POSE:
-            # moving towards a desired pose
-            if self.close_to(self.x_g,self.y_g,self.theta_g):
-                self.mode = Mode.IDLE
-            else:
-                self.go_to_pose()
+        # seems like POSE is not used
+        # elif self.mode == Mode.POSE:
+        #     # moving towards a desired pose
+        #     if self.close_to(self.x_g,self.y_g,self.theta_g):
+        #         self.mode = Mode.IDLE
+        #     else:
+        #         self.go_to_pose()
 
         elif self.mode == Mode.STOP:
             # at a stop sign
@@ -185,6 +231,17 @@ class Supervisor:
                 self.mode = Mode.IDLE
             else:
                 self.nav_to_pose()
+
+        elif self.mode == Mode.RESCUE:
+            pass
+            # animal_queue = []
+            # # move through geotagged animal queue
+            # for i in range(len(animal_queue)):
+            #     # move to the animal
+            #     self.mode = Mode.NAV
+            #     # stop at each animal location for fixed amount of time
+            #     rospy.sleep(ANIMAL_RESCUE_TIME)
+            #     # publish "Rescued [animal_type]" message
 
         else:
             raise Exception('This mode is not supported: %s'
