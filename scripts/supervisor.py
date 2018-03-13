@@ -250,7 +250,7 @@ class Supervisor:
             # explore with teleop
             pass
 
-        elif self.mode = Mode.REQUEST_RESCUE:
+        elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
             rescue_ready_msg = True
             self.ready_to_rescue.publish(rescue_ready_msg)
