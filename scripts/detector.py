@@ -209,7 +209,7 @@ class Detector:
 
     def estimate_obj_pos_in_world(dist, ucen, vcen):
         
-        (x_hat, y_hat, z_hat) = self.project_pixel_to_ray(ucen,vcen)
+        (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen)
 
         (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
         x_w2b_W = translation[0]
@@ -228,7 +228,7 @@ class Detector:
 
         pos_b2c_B = np.array([self.base_to_camera[0], self.base_to_camera[1]]).T
         pos_b2c_C = R_B2C.dot(pos_b2c_B)
-        pos_c2o_C = dist*np.array([x_hat, z_hat]).T
+        pos_c2o_C = dist*np.array([x_hat_C, z_hat_C]).T
         pos_b2o_C = pos_b2c_C + pos_c2o_C
 
         pos_W = R_B2W.dot(R_C2B).dot(pos_b2o_C) + pos_w2b_W
