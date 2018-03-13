@@ -25,6 +25,15 @@ CROSSING_TIME = 3
 # time taken to rescue an animal
 ANIMAL_RESCUE_TIME = 3
 
+# Distance threshold to consider to stop detections as
+# the same stop sign
+STOP_SIGN_DIST_THRESH = 1
+
+# Distance threshold to consider to animal detections as
+# the same stop sign
+ANIMAL_DIST_THRESH = 1
+
+
 # state machine modes, not all implemented
 class Mode(Enum):
     IDLE = 1
@@ -50,6 +59,10 @@ class Supervisor:
         self.x_g = 0
         self.y_g = 0
         self.theta_g = 0
+
+        # Landmark lists
+        self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH)
+        self.animal_waypoints = landmarks.AnimalWaypoints(dist_thresh=ANIMAL_DIST_THRESH) 
 
         # current mode
         self.mode = Mode.IDLE
@@ -85,12 +98,19 @@ class Supervisor:
         """ callback for when the detector has found a stop sign. Note that
         a distance of 0 can mean that the lidar did not pickup the stop sign at all """
 
-        # distance of the stop sign
-        dist = msg.distance
+        # # distance of the stop sign
+        # dist = msg.distance
 
-        # if close enough and in nav mode, stop
-        if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
-            self.init_stop_sign()
+        # # if close enough and in nav mode, stop
+        # if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
+        #     self.init_stop_sign()
+
+        pose = np.array([self.x, self.y, self,theta])
+        bbox_heght = msg.corners[3] - msg.corners[1]
+
+        # observation = msg.location
+
+        # self.animal_waypoints.add_observation(observation, pose, bbox_height):
 
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
