@@ -231,7 +231,8 @@ class Detector:
             y_w2b_W = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
             theta = euler[2]
-            print("Received nav solution.")
+            print("Bacon in the world: ")
+            print([x_w2b_W, y_w2b_W, theta])
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return np.array([0, 0, 0]).T 
         
