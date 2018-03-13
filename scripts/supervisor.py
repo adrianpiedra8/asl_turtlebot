@@ -69,6 +69,9 @@ class Supervisor:
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
 
+        # string for target animal
+        self.target_animal = None
+
         # current mode
         self.mode = Mode.IDLE
         self.last_mode_printed = None
@@ -123,9 +126,11 @@ class Supervisor:
 
         observation = msg.location_W
 
+        animal_type = msg.name
+
         # check parameters to determine if this is a new animal
         # if it is a new animal, add it to the animal rescue queue
-        self.animal_waypoints.add_observation(observation, pose, bbox_height)
+        self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
 
         
     def rescue_on_callback(self, msg):
@@ -133,7 +138,6 @@ class Supervisor:
         self.rescue_on = msg.data
 
         if self.rescue_on:
-
             self.mode = Mode.GO_TO_ANIMAL
 
     def nav_to_pose(self):
@@ -181,14 +185,15 @@ class Supervisor:
 
     def init_go_to_animal(self):
         # remove the animal from the rescue queue
-        waypoint = self.animal_waypoints.pop()
+        waypoint, animal_type = self.animal_waypoints.pop()
 
         if waypoint == None:
-            self.mode = self.IDLE
+            self.mode = Mode.IDLE
         else:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
+            self.target_animal = animal_type
             self.mode = self.GO_TO_ANIMAL
 
     def init_rescue_animal(self):
@@ -268,7 +273,7 @@ class Supervisor:
 
         elif self.mode == Mode.RESCUE_ANIMAL:
             if self.has_rescued():
-                rospy.loginfo("Rescued a: %s", self.mode)
+                rospy.loginfo("Rescued a: %s", self.target_animal)
                 self.init_go_to_animal()
 
         else:

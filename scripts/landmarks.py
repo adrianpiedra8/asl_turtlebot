@@ -38,8 +38,9 @@ class AnimalWaypoints:
         self.locations = np.zeros((0,2))
         self.dist_thresh = dist_thresh
         self.bbox_heights = np.zeros((0))
+        self.animal_types = []
 
-    def add_observation(self, observation, pose, bbox_height):
+    def add_observation(self, observation, pose, bbox_height, animal_type):
         existing = findmatch(self.locations, observation)
         if existing != None:
             self.update_location(existing, observation, pose, bbox_height)
@@ -47,6 +48,7 @@ class AnimalWaypoints:
             self.locations = np.vstack((self.locations, observation))
             self.poses = np.vstack((self.poses, pose))
             self.bbox_heights = np.append(self.bbox_heights, bbox_height)
+            self.animal_types.append(animal_type)
 
     def update_location(self, index, observation, pose, bbox_height):
         # Only update if new observation has a bigger bounding box
@@ -55,12 +57,15 @@ class AnimalWaypoints:
             self.poses[index] = pose
             self.bbox_heights[index] = bbox_height
 
+
     def pop(self):
         if len(self.bbox_heights) > 0:
             waypoint = self.poses[0,:]
+            animal_type = animal_types[0]
             self.poses = np.delete(self.poses, 0, axis=0)
             self.locations = np.delete(self.locations, 0, axis=0)
             self.bbox_heights = np.delete(self.bbox_heights, 0)
-            return waypoint
+            del animal_types[0]
+            return waypoint, animal_type
         else:
-            return None
+            return None, None
