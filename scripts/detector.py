@@ -141,17 +141,13 @@ class Detector:
         that is a unit vector in the direction of the pixel, in the camera frame.
         This function access self.fx, self.fy, self.cx and self.cy """
 
-        ### YOUR CODE HERE ###
-
-        x = 1 # CHANGE ME
-        y = 0 # CHANGE ME
-        z = 0 # CHANGE ME
-
-        ### END OF YOUR CODE ###
+        x = (u - self.cx)/self.fx
+        y = (v - self.cy)/self.fy
+        z = 1
 
         return (x,y,z)
 
-    def estimate_distance(self, thetaleft, thetaright, ranges):
+    def estimate_distance_from_thetas(self, thetaleft, thetaright, ranges):
         """ estimates the distance of an object in between two angles
         using lidar measurements """
 
@@ -172,6 +168,22 @@ class Detector:
             dist /= num_m
 
         return dist
+
+    def estimate_distance_from_image(self, box_height, obj_height, est_dist_flag):
+        
+        if est_dist_flag:
+            dist = self.fy*obj_height/box_height
+            # self.estimate_distance_from_function(box_height)
+        else:
+            dist = 0
+        
+        return dist
+    def estimate_distance_from_function(self, box_height):
+        
+        dist_function = ((box_height - 149.46)/-5.6858) * 25.4
+        print("Ryan's D: " + str(dist_function) + "mm")
+
+        return None
 
     def camera_callback(self, msg):
         """ callback for camera images """
@@ -231,8 +243,25 @@ class Detector:
                 if thetaright<0:
                     thetaright += 2.*math.pi
 
-                # estimate the corresponding distance using the lidar
-                dist = self.estimate_distance(thetaleft,thetaright,img_laser_ranges)
+                box_height = np.abs(ymax - ymin)
+
+                if cl == 13:
+                    print("DETECTED STOP SIGN!")
+                    obj_height = 64 #mm
+                    est_dist_flag = True
+                elif cl == 17:
+                    print("DETECTED CAT!")
+                    obj_height = 113
+                    est_dist_flag = True
+                else:
+                    # print("NOTHING ELSE MATTERS.")
+                    obj_height = None
+                    est_dist_flag = False
+
+                # if cl == 'stop sign':
+                dist = self.estimate_distance_from_image(box_height, obj_height, est_dist_flag)
+                # else:
+                #     dist = self.estimate_distance_from_thetas(thetaleft, thetaright, img_laser_ranges)
 
                 if not self.object_publishers.has_key(cl):
                     self.object_publishers[cl] = rospy.Publisher('/detector/'+self.object_labels[cl],
@@ -259,14 +288,11 @@ class Detector:
         the focal lengths. Stores the result in the class itself as self.cx, self.cy,
         self.fx and self.fy """
 
-        ### YOUR CODE HERE ###
-
-        self.cx = 0 # CHANGE ME
-        self.cy = 0 # CHANGE ME
-        self.fx = 1 # CHANGE ME
-        self.fy = 1 # CHANGE ME
-
-        ### END OF YOUR CODE ###
+        K = msg.K
+        self.cx = K[2]
+        self.cy = K[5]
+        self.fx = K[0]
+        self.fy = K[4]
 
     def laser_callback(self, msg):
         """ callback for thr laser rangefinder """
