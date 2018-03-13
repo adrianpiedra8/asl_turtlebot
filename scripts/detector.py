@@ -218,10 +218,10 @@ class Detector:
         theta = euler[2]
         
         R_B2W = np.array([[np.cos(theta), -np.sin(theta)],
-                          [np.sin(theta),  np.cos(theta)])
+                          [np.sin(theta),  np.cos(theta)]])
         R_W2B = R_B2W.T
         R_B2C = np.array([[np.cos(self.base_to_camera[2]), -np.sin(self.base_to_camera[2])],
-                          [np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])])
+                          [np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])]])
         R_C2B = R_B2C.T
 
         pos_w2b_W = np.array([x_w2b_W, y_w2b_W]).T 
