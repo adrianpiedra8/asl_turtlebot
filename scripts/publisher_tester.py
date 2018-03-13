@@ -11,13 +11,15 @@ class Tester:
 
     def rescue_on(self):
         rescue_on_publisher = rospy.Publisher('/rescue_on', Bool, queue_size=10)
+        rate = rospy.Rate(1) # 10 Hz
     	while (1):
         	rescue_on_publisher.publish(True)
-
+        	rate.sleep()
 
 
     def object_msg(self):
         object_publisher = rospy.Publisher('/detector/none', DetectedObject, queue_size=10)
+        rate = rospy.Rate(10) # 10 Hz
         while 1:
             # publishes the detected object and its location
             object_msg = DetectedObject()
@@ -30,7 +32,10 @@ class Tester:
             object_msg.corners = [0,0,0,0]
             object_msg.location_W = [0,0,0,0] #pos_obj_W
 
+            print('start publish')
             object_publisher.publish(object_msg)
+            print('end publish')
+            rate.sleep()
 
 if __name__ == '__main__':
     s = Tester()

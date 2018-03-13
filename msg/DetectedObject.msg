@@ -5,4 +5,4 @@ float64 distance
 float64 thetaleft
 float64 thetaright
 float64[] corners
-
+float64[] location_W

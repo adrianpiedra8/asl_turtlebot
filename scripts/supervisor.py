@@ -222,6 +222,7 @@ class Supervisor:
             pass
 
         # logs the current mode
+        rospy.loginfo("Current Mode: %s", self.mode)
         if not(self.last_mode_printed == self.mode):
             rospy.loginfo("Current Mode: %s", self.mode)
             self.last_mode_printed = self.mode
@@ -283,7 +284,9 @@ class Supervisor:
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
+            rospy.loginfo('pre loop')
             self.loop()
+            rospy.loginfo('post loop')
             rate.sleep()
 
 if __name__ == '__main__':
