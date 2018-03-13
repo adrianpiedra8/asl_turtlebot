@@ -2,15 +2,17 @@
 
 import rospy
 import os
+# from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
 # watch out on the order for the next two imports lol
-from tf import TransformListener
-import tensorflow as tf
+import tf
+import tensorflow 
 import numpy as np
 from sensor_msgs.msg import CompressedImage, Image, CameraInfo, LaserScan
 from asl_turtlebot.msg import DetectedObject
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import math
+import tf2_ros
 
 # path to the trained conv net
 PATH_TO_MODEL = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../tfmodels/ssd_mobilenet_v1_coco.pb')
@@ -40,22 +42,27 @@ class Detector:
 
     def __init__(self):
         rospy.init_node('turtlebot_detector', anonymous=True)
+
+        # rate = rospy.Rate(1)
+        # while rospy.Time.now() == rospy.Time(0):
+        #     rate.sleep()
+
         self.bridge = CvBridge()
 
         if USE_TF:
-            self.detection_graph = tf.Graph()
+            self.detection_graph = tensorflow.Graph()
             with self.detection_graph.as_default():
-                od_graph_def = tf.GraphDef()
-                with tf.gfile.GFile(PATH_TO_MODEL, 'rb') as fid:
+                od_graph_def = tensorflow.GraphDef()
+                with tensorflow.gfile.GFile(PATH_TO_MODEL, 'rb') as fid:
                     serialized_graph = fid.read()
                     od_graph_def.ParseFromString(serialized_graph)
-                    tf.import_graph_def(od_graph_def,name='')
+                    tensorflow.import_graph_def(od_graph_def,name='')
                 self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
                 self.d_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
                 self.d_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
                 self.d_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
                 self.num_d = self.detection_graph.get_tensor_by_name('num_detections:0')
-            self.sess = tf.Session(graph=self.detection_graph)
+            self.sess = tensorflow.Session(graph=self.detection_graph)
 
         # camera and laser parameters that get updated
         self.cx = 0.
@@ -68,28 +75,36 @@ class Detector:
         self.object_publishers = {}
         self.object_labels = load_object_labels(PATH_TO_LABELS)
 
-        self.tf_listener = TransformListener()
-        self.tfBuffer = tf2_ros.Buffer()
+        self.tf_listener = tf.TransformListener()
 
-        while True:
-            try:
-                # notably camera_link and not camera_depth_frame below, not sure why
-                self.raw_base_to_camera = self.tfBuffer.lookup_transform("base_footprint", "base_scan", rospy.Time()).transform
-                break
-            except tf2_ros.LookupException:
-                rate.sleep()
-        b2c_rotation = self.raw_base_to_camera.rotation
-        b2c_translation = self.raw_base_to_camera.translation
-        b2c_tf_theta = get_yaw_from_quaternion(rotation)
-        self.base_to_camera = [b2c_translation.x,
-                               b2c_translation.y,
-                               b2c_tf_theta]
+        # self.tfBuffer = tf2_ros.Buffer()
+        # self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        # while True:
+        #     print("Looping")
+        #     try:
+        #         # notably camera_link and not camera_depth_frame below, not sure why
+        #         self.raw_base_to_camera = self.tfBuffer.lookup_transform("base_footprint", "base_scan", rospy.Time()).transform
+        #         print("Breaking loop.")
+        #         break
+        #     except tf2_ros.LookupException:
+        #         print("Sleeping.")
+        #         rate.sleep()
+        # b2c_rotation = self.raw_base_to_camera.rotation
+        # b2c_translation = self.raw_base_to_camera.translation
+        # b2c_tf_theta = get_yaw_from_quaternion(rotation)
+        # self.base_to_camera = [b2c_translation.x,
+        #                        b2c_translation.y,
+        #                        b2c_tf_theta]
+
+        self.base_to_camera = [-.129, -.005, 0]
 
         rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/image_raw/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/camera_info', CameraInfo, self.camera_info_callback)
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
-        rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
+        # rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
+
+        print("Finished Init!")
 
     def run_detection(self, img):
         """ runs a detection method in a given image """
@@ -193,7 +208,7 @@ class Detector:
     def estimate_distance_from_image(self, box_height, obj_height, est_dist_flag):
         
         if est_dist_flag:
-            dist = self.fy*obj_height/box_height
+            dist = self.fy*obj_height/box_height/1000
             # self.estimate_distance_from_function(box_height)
         else:
             dist = 0
@@ -207,15 +222,18 @@ class Detector:
 
         return None
 
-    def estimate_obj_pos_in_world(dist, ucen, vcen):
+    def estimate_obj_pos_in_world(self, dist, ucen, vcen):
         
         (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen)
-
-        (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-        x_w2b_W = translation[0]
-        y_w2b_W = translation[1]
-        euler = tf.transformations.euler_from_quaternion(rotation)
-        theta = euler[2]
+        try:
+            (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+            x_w2b_W = translation[0]
+            y_w2b_W = translation[1]
+            euler = tf.transformations.euler_from_quaternion(rotation)
+            theta = euler[2]
+            print("Received nav solution.")
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return np.array([0, 0, 0]).T 
         
         R_B2W = np.array([[np.cos(theta), -np.sin(theta)],
                           [np.sin(theta),  np.cos(theta)]])
@@ -233,7 +251,7 @@ class Detector:
 
         pos_W = R_B2W.dot(R_C2B).dot(pos_b2o_C) + pos_w2b_W
 
-        return pos_W
+        return np.hstack((pos_W, 1))
 
     def camera_callback(self, msg):
         """ callback for camera images """
