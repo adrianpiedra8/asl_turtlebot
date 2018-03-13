@@ -25,6 +25,15 @@ CROSSING_TIME = 3
 # time taken to rescue an animal
 ANIMAL_RESCUE_TIME = 3
 
+# Distance threshold to consider to stop detections as
+# the same stop sign
+STOP_SIGN_DIST_THRESH = 1
+
+# Distance threshold to consider to animal detections as
+# the same stop sign
+ANIMAL_DIST_THRESH = 1
+
+
 # state machine modes, not all implemented
 class Mode(Enum):
     IDLE = 1
@@ -50,6 +59,10 @@ class Supervisor:
         self.x_g = 0
         self.y_g = 0
         self.theta_g = 0
+
+        # Landmark lists
+        self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH)
+        self.animal_waypoints = landmarks.AnimalWaypoints(dist_thresh=ANIMAL_DIST_THRESH) 
 
         # current mode
         self.mode = Mode.IDLE
