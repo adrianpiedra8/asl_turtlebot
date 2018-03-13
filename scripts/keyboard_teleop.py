@@ -32,6 +32,7 @@
 import rospy
 
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Int8
 
 import sys, select, termios, tty
 
@@ -60,7 +61,7 @@ moveBindings = {
         'u':(1,1),
         ',':(-1,0),
         '.':(-1,1),
-        'm':(-1,-1),
+        'm':(-1,-1)
            }
 
 speedBindings={
@@ -70,6 +71,17 @@ speedBindings={
         'x':(.9,1),
         'e':(1,1.1),
         'c':(1,.9),
+          }
+
+stateBindings={
+        '1':1,
+        '2':2,
+        '3':3,
+        '4':4,
+        '5':5,
+        '6':6,
+        '7':7,
+        '8':8
           }
 
 def getKey():
@@ -94,6 +106,7 @@ if __name__=="__main__":
     
     rospy.init_node('turtlebot_teleop')
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+    state_pub = rospy.Publisher('/cmd_state', Int8, queue_size=10)
 
     x = 0
     th = 0
@@ -123,6 +136,13 @@ if __name__=="__main__":
                     print(msg)
                 status = (status + 1) % 15
             elif key == ' ' or key == 'k' :
+                x = 0
+                th = 0
+                control_speed = 0
+                control_turn = 0
+            elif key in stateBindings.keys():
+                state = stateBindings[key]
+                state_pub.publish(state)
                 x = 0
                 th = 0
                 control_speed = 0
