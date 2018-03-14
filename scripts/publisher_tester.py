@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import Bool
 from asl_turtlebot.msg import DetectedObject
+import numpy as np
 
 class Tester:
 
@@ -18,18 +19,20 @@ class Tester:
 
 
     def object_msg(self):
-        object_publisher = rospy.Publisher('/detector/none', DetectedObject, queue_size=10)
+        object_publisher = rospy.Publisher('/detector/cat', DetectedObject, queue_size=10)
         rate = rospy.Rate(1) # 1 Hz
         while 1:
             # publishes the detected object and its location
             object_msg = DetectedObject()
             object_msg.id = 0
-            object_msg.name = 'None'
+            object_msg.name = 'cat'
             object_msg.confidence = 0
             object_msg.distance = 0
             object_msg.thetaleft = 0
             object_msg.thetaright = 0
             object_msg.corners = [0,0,0,0]
+            loc = np.random.rand(2)*3
+            object_msg.location_W = loc.tolist()
 
             print('start publish')
             object_publisher.publish(object_msg)

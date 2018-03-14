@@ -9,6 +9,8 @@ import landmarks
 import tf
 import math
 from enum import Enum
+import numpy as np
+import pdb
 
 # threshold at which we consider the robot at a location
 POS_EPS = .1
@@ -119,13 +121,13 @@ class Supervisor:
 
         observation = msg.location_W
 
-        self.stop_sign.add_observation(observation)
+        self.stop_signs.add_observation(observation)
 
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
 
-        pose = np.array([self.x, self.y, self,theta])
-        bbox_heght = msg.corners[3] - msg.corners[1]
+        pose = np.array([self.x, self.y, self.theta])
+        bbox_height = msg.corners[3] - msg.corners[1]
 
         observation = msg.location_W
 
@@ -188,7 +190,9 @@ class Supervisor:
         # remove the animal from the rescue queue
         waypoint, animal_type = self.animal_waypoints.pop()
 
-        if waypoint != None:    
+        if np.any(waypoint == None):
+            pass
+        else:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
@@ -222,7 +226,6 @@ class Supervisor:
             pass
 
         # logs the current mode
-        rospy.loginfo("Current Mode: %s", self.mode)
         if not(self.last_mode_printed == self.mode):
             rospy.loginfo("Current Mode: %s", self.mode)
             self.last_mode_printed = self.mode

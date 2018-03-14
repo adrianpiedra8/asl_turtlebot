@@ -348,7 +348,7 @@ class Detector:
                 object_msg.thetaleft = thetaleft
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
-                #object_msg.location_W = pos_obj_W.tolist()
+                object_msg.location_W = pos_obj_W.tolist()
                 self.object_publishers[cl].publish(object_msg)
 
         # displays the camera image

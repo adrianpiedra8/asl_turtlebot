@@ -48,7 +48,7 @@ class StopSigns:
         self.observations_count[index] = n + 1
 
         rospy.loginfo("Incorporating stop sign observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
-              index, observation, self.locations[index, 0], self.locations[index, 1])
+              index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
 
 class AnimalWaypoints:
     def __init__(self, dist_thresh=1):
@@ -80,10 +80,10 @@ class AnimalWaypoints:
             self.poses = np.vstack((self.poses, pose))
             self.bbox_heights = np.append(self.bbox_heights, bbox_height)
             self.observations_count = np.append(self.observations_count, 1)
-            self.animal_types = np.append(self.animal_types, animal_type)
+            self.animal_types.append(animal_type)
 
             index = self.locations.shape[0] - 1
-            rospy.loginfo("Adding new animal waypoint. Index: %f, location: [%f, %f], pose: [%f, %f, %f], bbox_height: %f, animal type: %f",
+            rospy.loginfo("Adding new animal waypoint. Index: %f, location: [%f, %f], pose: [%f, %f, %f], bbox_height: %f, animal type: %s",
                   index, self.locations[index, 0], self.locations[index, 1], 
                   self.poses[index, 0], self.poses[index, 1], self.poses[index, 2], 
                   self.bbox_heights[index], self.animal_types[index])
@@ -99,7 +99,7 @@ class AnimalWaypoints:
         self.observations_count[index] = n + 1
 
         rospy.loginfo("Incorporating animal waypoint observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
-                      index, observation, self.locations[index, 0], self.locations[index, 1])
+                      index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
 
         # Only update pose if new observation has a bigger bounding box
         if bbox_height > self.bbox_heights[index]:
@@ -112,11 +112,11 @@ class AnimalWaypoints:
     def pop(self):
         if len(self.bbox_heights) > 0:
             waypoint = self.poses[0,:]
-            animal_type = animal_types[0]
+            animal_type = self.animal_types[0]
             self.poses = np.delete(self.poses, 0, axis=0)
             self.locations = np.delete(self.locations, 0, axis=0)
             self.bbox_heights = np.delete(self.bbox_heights, 0)
-            del animal_types[0]
+            del self.animal_types[0]
             return waypoint, animal_type
         else:
             return None, None
