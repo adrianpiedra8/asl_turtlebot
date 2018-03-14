@@ -222,37 +222,27 @@ class Detector:
 
         return None
 
-    def estimate_obj_pos_in_world(self, dist, ucen, vcen):
+    def estimate_obj_pos_in_world(self, dist, ucen, vcen, pose_w2b_W):
         
-        (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen)
-        try:
-            (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-            x_w2b_W = translation[0]
-            y_w2b_W = translation[1]
-            euler = tf.transformations.euler_from_quaternion(rotation)
-            theta = euler[2]
-            print("Bacon in the world: ")
-            print([x_w2b_W, y_w2b_W, theta])
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return np.array([0, 0, 0]).T 
+        (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen) 
         
-        R_B2W = np.array([[ np.cos(theta),  np.sin(theta)],
-                          [-np.sin(theta),  np.cos(theta)]])
+        R_B2W = np.array([[ np.cos(pose_w2b_W[2]),  np.sin(pose_w2b_W[2])],
+                          [-np.sin(pose_w2b_W[2]),  np.cos(pose_w2b_W[2])]]).reshape((2,2))
         R_W2B = R_B2W.T
         R_B2C = np.array([[ np.cos(self.base_to_camera[2]),  np.sin(self.base_to_camera[2])],
-                          [-np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])]])
+                          [-np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])]]).reshape((2,2))
         R_C2B = R_B2C.T
 
-        pos_w2b_W = np.array([x_w2b_W, y_w2b_W]).T 
+        pos_w2b_W = pose_w2b_W[:2].reshape((2, 1)) 
 
-        pos_b2c_B = np.array([self.base_to_camera[0], self.base_to_camera[1]]).T
-        pos_b2c_C = R_B2C.dot(pos_b2c_B)
-        pos_c2o_C = dist*np.array([x_hat_C, z_hat_C]).T
-        pos_b2o_C = pos_b2c_C + pos_c2o_C
+        pos_b2c_B = np.array([self.base_to_camera[0], self.base_to_camera[1]]).reshape((2, 1))
+        pos_b2c_C = R_B2C.dot(pos_b2c_B).reshape((2, 1))
+        pos_c2o_C = dist*np.array([x_hat_C, z_hat_C]).reshape((2, 1))
+        pos_b2o_C = pos_b2c_C.reshape((2,1)) + pos_c2o_C.reshape((2,1))
 
         pos_W = R_B2W.dot(R_C2B).dot(pos_b2o_C) + pos_w2b_W
 
-        return np.hstack((pos_W, 1))
+        return pos_W.reshape(2,)
 
     def camera_callback(self, msg):
         """ callback for camera images """
@@ -283,6 +273,19 @@ class Detector:
         self.camera_common(img_laser_ranges, img, img_bgr8)
 
     def camera_common(self, img_laser_ranges, img, img_bgr8):
+        
+        try:
+            (translation,rotation) = self.tf_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+            x_w2b_W = translation[0]
+            y_w2b_W = translation[1]
+            euler = tf.transformations.euler_from_quaternion(rotation)
+            theta = euler[2]
+            pose_w2b_W = np.vstack((x_w2b_W, y_w2b_W, theta))
+            print("Bacons world nav: " + str(pose_w2b_W[:2].flatten()))
+            nav_flag = True
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            nav_flag = False
+
         (img_h,img_w,img_c) = img.shape
 
         # runs object detection in the image
@@ -329,11 +332,13 @@ class Detector:
 
                 # if cl == 'stop sign':
                 dist = self.estimate_distance_from_image(box_height, obj_height, est_dist_flag)
-                pos_obj_W = self.estimate_obj_pos_in_world(dist, xcen, ycen)
-                print("Object world position: ")
-                print(pos_obj_W)
-                # else:
-                #     dist = self.estimate_distance_from_thetas(thetaleft, thetaright, img_laser_ranges)
+                if nav_flag:
+                    pos_obj_W = self.estimate_obj_pos_in_world(dist, xcen, ycen, pose_w2b_W)
+                    pos_obj_W_wflag = np.vstack((pos_obj_W.reshape(2,1), 1.0)).flatten()
+                else:
+                    pos_obj_W = np.array([0, 0])
+                    pos_obj_W_wflag = np.vstack((pos_obj_W.reshape((2,1)), 0.0)).flatten()
+                print("Object world pos: " + str(pos_obj_W))
 
                 if not self.object_publishers.has_key(cl):
                     self.object_publishers[cl] = rospy.Publisher('/detector/'+self.object_labels[cl],
@@ -348,7 +353,7 @@ class Detector:
                 object_msg.thetaleft = thetaleft
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
-                object_msg.location_W = pos_obj_W.tolist()
+                object_msg.location_W = pos_obj_W_wflag.tolist()
                 self.object_publishers[cl].publish(object_msg)
 
         # displays the camera image
