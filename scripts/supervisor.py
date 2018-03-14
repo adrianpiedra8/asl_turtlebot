@@ -189,6 +189,7 @@ class Supervisor:
     def init_go_to_animal(self):
         # remove the animal from the rescue queue
         waypoint, animal_type = self.animal_waypoints.pop()
+        print waypoint, animal_type
 
         if np.any(waypoint == None):
             pass
@@ -197,8 +198,6 @@ class Supervisor:
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
             self.target_animal = animal_type
-
-
 
     def init_rescue_animal(self):
         """ initiates an animal rescue """
@@ -261,6 +260,7 @@ class Supervisor:
 
         elif self.mode == Mode.NAV:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
+                print "I'm close!"
                 self.mode = Mode.IDLE
             else:
                 self.nav_to_pose()
@@ -291,8 +291,9 @@ class Supervisor:
 
                 self.init_go_to_animal()
 
+
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                self.Mode = Mode.RESCUE_ANIMAL
+                self.mode = Mode.RESCUE_ANIMAL
             else:
                 self.nav_to_pose()
 
