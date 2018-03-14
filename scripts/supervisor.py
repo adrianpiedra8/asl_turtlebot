@@ -20,10 +20,10 @@ THETA_EPS = .3
 STOP_TIME = 3
 
 # minimum distance from a stop sign to obey it
-STOP_MIN_DIST = .5
+STOP_MIN_DIST = .3
 
 # minimum distance frmo a stop sign to leave CROSS mode
-CROSS_MIN_DIST = .6
+CROSS_MIN_DIST = .4
 
 # time taken to cross an intersection
 CROSSING_TIME = 3
@@ -126,8 +126,8 @@ class Supervisor:
         current_pose = [self.x, self.y]
         dist2stop = []
         for i in range(self.stop_signs.locations.shape[0]):
-            dist2stop = dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
-        return (self.mode == Mode.NAV and any(dist < STOP_MIN_DIST for dist in dist2stop)
+            dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
+        return (self.mode == Mode.NAV and any(dist < STOP_MIN_DIST for dist in dist2stop))
 
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
@@ -174,26 +174,19 @@ class Supervisor:
         """ initiates a stop sign maneuver """
 
         self.stop_sign_start = rospy.get_rostime()
-        self.mode = Mode.STOP
 
     def has_stopped(self):
         """ checks if stop sign maneuver is over """
 
         return (self.mode == Mode.STOP and (rospy.get_rostime()-self.stop_sign_start)>rospy.Duration.from_sec(STOP_TIME))
 
-    def init_crossing(self):
-        """ initiates an intersection crossing maneuver """
-
-        self.cross_start = rospy.get_rostime()
-        self.mode = Mode.CROSS
-
     def has_crossed(self):
         """ checks if crossing maneuver is over """
         current_pose = [self.x, self.y]
         dist2stop = []
         for i in range(self.stop_signs.locations.shape[0]):
-            dist2stop = dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
-        return (self.mode == Mode.CROSS and all(dist > CROSS_MIN_DIST for dist in dist2stop) # (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
+            dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
+        return (self.mode == Mode.CROSS and all(dist > CROSS_MIN_DIST for dist in dist2stop)) # (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
 
     def init_go_to_animal(self):
         # remove the animal from the rescue queue
@@ -257,13 +250,10 @@ class Supervisor:
             if self.has_stopped():
                 self.mode = Mode.CROSS
             else:
-                pass
+                self.stay_idle()
 
         elif self.mode == Mode.CROSS:
             # crossing an intersection
-            if not self.init_flag:
-                self.init_flag = 1
-                self.init_crossing()
 
             if self.has_crossed():
                 self.mode = self.modeafterstop
