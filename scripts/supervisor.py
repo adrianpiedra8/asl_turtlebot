@@ -119,7 +119,7 @@ class Supervisor:
         # if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
         #     self.init_stop_sign()
         if msg.location_W[2] == 1.0:
-            observation = msg.location_W
+            observation = msg.location_W[:2]
             self.stop_signs.add_observation(observation)
 
     def animal_detected_callback(self, msg):
@@ -129,7 +129,7 @@ class Supervisor:
             pose = np.array([self.x, self.y, self.theta])
             bbox_height = msg.corners[3] - msg.corners[1]
 
-            observation = msg.location_W
+            observation = msg.location_W[:2]
 
             animal_type = msg.name
 
