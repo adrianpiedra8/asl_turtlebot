@@ -77,26 +77,33 @@ class Detector:
 
         self.tf_listener = tf.TransformListener()
 
-        # self.tfBuffer = tf2_ros.Buffer()
-        # self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
-        # while True:
-        #     print("Looping")
-        #     try:
-        #         # notably camera_link and not camera_depth_frame below, not sure why
-        #         self.raw_base_to_camera = self.tfBuffer.lookup_transform("base_footprint", "base_scan", rospy.Time()).transform
-        #         print("Breaking loop.")
-        #         break
-        #     except tf2_ros.LookupException:
-        #         print("Sleeping.")
-        #         rate.sleep()
-        # b2c_rotation = self.raw_base_to_camera.rotation
-        # b2c_translation = self.raw_base_to_camera.translation
-        # b2c_tf_theta = get_yaw_from_quaternion(rotation)
-        # self.base_to_camera = [b2c_translation.x,
-        #                        b2c_translation.y,
-        #                        b2c_tf_theta]
+        self.tfBuffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
+        rate = rospy.Rate(10) # 10 Hz
+        while True:
+            print("Looping")
+            try:
+                # notably camera_link and not camera_depth_frame below, not sure why
+                raw_b2c = self.tfBuffer.lookup_transform("camera", "base_footprint", rospy.Time()).transform
+                print("Breaking loop.")
+                break
+            except:# tf2_ros.LookupException:
+                print("Sleeping.")
+                rate.sleep()
 
-        self.base_to_camera = [-.129, -.005, 0]
+        b2c_translation = raw_b2c.translation
+        b2c_rotation = [raw_b2c.rotation.x, raw_b2c.rotation.y, raw_b2c.rotation.z, raw_b2c.rotation.w]
+
+        euler = tf.transformations.euler_from_quaternion(b2c_rotation)
+        b2c_tf_theta = euler[2]    
+
+        # Hard code theta because euler[2] doesn't seem to work
+        b2c_tf_theta = 1.570796326794897
+
+        self.base_to_camera = [b2c_translation.x,
+                               b2c_translation.y,
+                               b2c_tf_theta]
+
 
         rospy.Subscriber('/camera/image_raw', Image, self.camera_callback, queue_size=1, buff_size=2**24)
         rospy.Subscriber('/camera/image_raw/compressed', CompressedImage, self.compressed_camera_callback, queue_size=1, buff_size=2**24)
