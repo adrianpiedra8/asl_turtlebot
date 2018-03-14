@@ -118,31 +118,30 @@ class Supervisor:
         # # if close enough and in nav mode, stop
         # if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
         #     self.init_stop_sign()
-
-        observation = msg.location_W
-
-        self.stop_signs.add_observation(observation)
+        if msg.location_W[2] == 1.0:
+            observation = msg.location_W
+            self.stop_signs.add_observation(observation)
 
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
 
-        pose = np.array([self.x, self.y, self.theta])
-        bbox_height = msg.corners[3] - msg.corners[1]
+        if msg.location_W[2] == 1.0:
+            pose = np.array([self.x, self.y, self.theta])
+            bbox_height = msg.corners[3] - msg.corners[1]
 
-        observation = msg.location_W
+            observation = msg.location_W
 
-        animal_type = msg.name
+            animal_type = msg.name
 
-        # check parameters to determine if this is a new animal
-        # if it is a new animal, add it to the animal rescue queue
-        # only add animals in the exploration state
-        if self.mode == Mode.EXPLORE:
-            self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
-        
+            # check parameters to determine if this is a new animal
+            # if it is a new animal, add it to the animal rescue queue
+            # only add animals in the exploration state
+            if self.mode == Mode.EXPLORE:
+                self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
+
     def rescue_on_callback(self, msg):
         """callback for when the rescue is ready"""
         self.rescue_on = msg.data
-
 
     def nav_to_pose(self):
         """ sends the current desired pose to the navigator """
