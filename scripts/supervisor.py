@@ -135,8 +135,9 @@ class Supervisor:
 
         # check parameters to determine if this is a new animal
         # if it is a new animal, add it to the animal rescue queue
-        self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
-
+        # only add animals in the exploration state
+        if self.mode == Mode.EXPLORE:
+            self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
         
     def rescue_on_callback(self, msg):
         """callback for when the rescue is ready"""
