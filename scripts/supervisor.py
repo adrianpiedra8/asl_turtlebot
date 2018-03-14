@@ -263,7 +263,6 @@ class Supervisor:
 
         elif self.mode == Mode.NAV:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                print "I'm close!"
                 self.mode = Mode.IDLE
             else:
                 self.nav_to_pose()
