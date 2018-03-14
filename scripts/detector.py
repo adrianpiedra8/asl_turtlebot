@@ -13,6 +13,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import math
 import tf2_ros
+import pdb
 
 # path to the trained conv net
 PATH_TO_MODEL = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../tfmodels/ssd_mobilenet_v1_coco.pb')
@@ -97,11 +98,12 @@ class Detector:
         euler = tf.transformations.euler_from_quaternion(b2c_rotation)
         b2c_tf_theta = euler[2]    
 
-        # Hard code theta because euler[2] doesn't seem to work
-        b2c_tf_theta = 1.570796326794897
+        # Hard code theta because euler[2] doesn't seem to work for 3D rotation
+        b2c_tf_theta = -1.570796326794897
 
-        self.base_to_camera = [b2c_translation.x,
-                               b2c_translation.y,
+        # Flip x and y because of the way we chose our camera frame
+        self.base_to_camera = [b2c_translation.y,
+                               b2c_translation.x,
                                b2c_tf_theta]
 
 
@@ -233,8 +235,8 @@ class Detector:
         
         (x_hat_C, y_hat_C, z_hat_C) = self.project_pixel_to_ray(ucen,vcen) 
         
-        R_B2W = np.array([[ np.cos(pose_w2b_W[2]),  np.sin(pose_w2b_W[2])],
-                          [-np.sin(pose_w2b_W[2]),  np.cos(pose_w2b_W[2])]]).reshape((2,2))
+        R_B2W = np.array([[ np.cos(pose_w2b_W[2]),  -np.sin(pose_w2b_W[2])],
+                          [np.sin(pose_w2b_W[2]),  np.cos(pose_w2b_W[2])]]).reshape((2,2))
         R_W2B = R_B2W.T
         R_B2C = np.array([[ np.cos(self.base_to_camera[2]),  np.sin(self.base_to_camera[2])],
                           [-np.sin(self.base_to_camera[2]),  np.cos(self.base_to_camera[2])]]).reshape((2,2))
