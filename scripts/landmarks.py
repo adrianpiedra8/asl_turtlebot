@@ -59,6 +59,9 @@ class AnimalWaypoints:
         self.observations_count = np.zeros((0))
         self.animal_types = []
 
+    def length(self):
+        return self.poses.shape[0]
+        
     def pprint(self):
         print('AnimalWaypoints pprint:')
         for i in range(self.locations.shape[0]):

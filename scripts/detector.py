@@ -231,7 +231,8 @@ class Detector:
             y_w2b_W = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
             theta = euler[2]
-            print("Received nav solution.")
+            print("Bacon in the world: ")
+            print([x_w2b_W, y_w2b_W, theta])
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return np.array([0, 0, 0]).T 
         
@@ -282,7 +283,6 @@ class Detector:
         self.camera_common(img_laser_ranges, img, img_bgr8)
 
     def camera_common(self, img_laser_ranges, img, img_bgr8):
-        print('camera common')
         (img_h,img_w,img_c) = img.shape
 
         # runs object detection in the image
@@ -348,9 +348,8 @@ class Detector:
                 object_msg.thetaleft = thetaleft
                 object_msg.thetaright = thetaright
                 object_msg.corners = [ymin,xmin,ymax,xmax]
-                object_msg.location_W = [ymin,xmin,ymax,xmax] #pos_obj_W
+                #object_msg.location_W = pos_obj_W.tolist()
                 self.object_publishers[cl].publish(object_msg)
-
 
         # displays the camera image
         cv2.imshow("Camera", img_bgr8)

@@ -62,6 +62,9 @@ class Supervisor:
         self.y_g = 0
         self.theta_g = 0
 
+        # init flag used for running init function for each state
+        self.init_flag = 0
+
         # Landmark lists
         self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH)
         self.animal_waypoints = landmarks.AnimalWaypoints(dist_thresh=ANIMAL_DIST_THRESH)
@@ -137,8 +140,6 @@ class Supervisor:
         """callback for when the rescue is ready"""
         self.rescue_on = msg.data
 
-        if self.rescue_on:
-            self.mode = Mode.GO_TO_ANIMAL
 
     def nav_to_pose(self):
         """ sends the current desired pose to the navigator """
@@ -187,14 +188,13 @@ class Supervisor:
         # remove the animal from the rescue queue
         waypoint, animal_type = self.animal_waypoints.pop()
 
-        if waypoint == None:
-            self.mode = Mode.IDLE
-        else:
+        if waypoint != None:    
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
             self.target_animal = animal_type
-            self.mode = self.GO_TO_ANIMAL
+
+
 
     def init_rescue_animal(self):
         """ initiates an animal rescue """
@@ -226,6 +226,7 @@ class Supervisor:
         if not(self.last_mode_printed == self.mode):
             rospy.loginfo("Current Mode: %s", self.mode)
             self.last_mode_printed = self.mode
+            self.init_flag = 0
 
         # checks wich mode it is in and acts accordingly
         if self.mode == Mode.IDLE:
@@ -234,13 +235,22 @@ class Supervisor:
 
         elif self.mode == Mode.STOP:
             # at a stop sign
+
+            if not self.init_flag:
+                self.init_flag = 1
+                self.init_stop_sign()
+
             if self.has_stopped():
-                self.init_crossing()
+                self.mode = Mode.CROSS
             else:
                 pass
 
         elif self.mode == Mode.CROSS:
             # crossing an intersection
+            if not self.init_flag:
+                self.init_flag = 1
+                self.init_crossing()
+
             if self.has_crossed():
                 self.mode = Mode.NAV
             else:
@@ -259,23 +269,41 @@ class Supervisor:
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
             rescue_ready_msg = True
-            self.ready_to_rescue.publish(rescue_ready_msg)
+            self.rescue_ready_publisher.publish(rescue_ready_msg)
 
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
-                self.init_go_to_animal()
+                if self.animal_waypoints.length() > 0:
+                    self.mode = Mode.GO_TO_ANIMAL
+                else:
+                    self.mode = Mode.IDLE
 
         elif self.mode == Mode.GO_TO_ANIMAL:
             # navigate to the animal
+
+            if not self.init_flag:
+                self.init_flag = 1
+                if self.animal_waypoints.length() == 0:
+                    self.mode = Mode.IDLE
+
+                self.init_go_to_animal()
+
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                self.init_rescue_animal()
+                self.Mode = Mode.RESCUE_ANIMAL
             else:
                 self.nav_to_pose()
 
         elif self.mode == Mode.RESCUE_ANIMAL:
+            if not self.init_flag:
+                self.init_flag = 1
+                self.init_rescue_animal()
+
             if self.has_rescued():
                 rospy.loginfo("Rescued a: %s", self.target_animal)
-                self.init_go_to_animal()
+                if self.animal_waypoints.length() > 0:
+                    self.mode = Mode.GO_TO_ANIMAL
+                else:
+                    self.mode = Mode.IDLE
 
         else:
             raise Exception('This mode is not supported: %s'
@@ -284,9 +312,7 @@ class Supervisor:
     def run(self):
         rate = rospy.Rate(10) # 10 Hz
         while not rospy.is_shutdown():
-            rospy.loginfo('pre loop')
             self.loop()
-            rospy.loginfo('post loop')
             rate.sleep()
 
 if __name__ == '__main__':
