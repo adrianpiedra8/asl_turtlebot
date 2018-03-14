@@ -2,6 +2,7 @@
 
 import numpy as np
 import rospy
+from visualization_msgs.msg import Marker
 import pdb
 
 def findmatch(existing, new, thresh):
@@ -13,11 +14,46 @@ def findmatch(existing, new, thresh):
         return np.where(dist < thresh)[0][0]
     return None
 
+def publish_marker(name, loc, type):
+
+    marker_pub = rospy.Publisher('/markers/' + name, Marker, queue_size=10)
+    # publishes the detected object and its location
+    marker = Marker()
+
+
+    marker.header.frame_id = "/map"
+
+    if type == 'stop_sign':
+        marker.type = marker.SPHERE
+    elif type == 'animal':
+        marker.type = marker.CUBE
+    else: 
+        error('unrecognized type in publish marker')
+
+    marker.action = marker.ADD
+    marker.scale.x = 0.2
+    marker.scale.y = 0.2
+    marker.scale.z = 0.2
+    marker.color.a = 1.0
+    marker.pose.orientation.w = 1.0
+    marker.pose.position.x = loc[0]
+    marker.pose.position.y = loc[1]
+    marker.pose.position.z = 0
+
+    marker_pub.publish(marker)
+
 class StopSigns:
     def __init__(self, dist_thresh=1):
         self.locations = np.zeros((0, 2))
         self.observations_count = np.zeros((0))
         self.dist_thresh = dist_thresh
+
+    def publish_all(self):
+        for i in range(self.length()):
+            publish_marker('stop_sign' + str(i), self.locations[i,:], 'stop_sign')
+
+    def length(self):
+        return self.locations.shape[0]
 
     def pprint(self):
         print('StopSigns pprint:')
@@ -58,6 +94,10 @@ class AnimalWaypoints:
         self.bbox_heights = np.zeros((0))
         self.observations_count = np.zeros((0))
         self.animal_types = []
+
+    def publish_all(self):
+        for i in range(self.length()):
+            publish_marker(self.animal_types[i] + str(i), self.locations[i,:], 'animal')
 
     def length(self):
         return self.poses.shape[0]

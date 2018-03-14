@@ -225,6 +225,9 @@ class Supervisor:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
+        self.stop_signs.publish_all()
+        self.animal_waypoints.publish_all()
+
         # logs the current mode
         if not(self.last_mode_printed == self.mode):
             rospy.loginfo("Current Mode: %s", self.mode)
