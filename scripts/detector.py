@@ -85,7 +85,7 @@ class Detector:
             print("Looping")
             try:
                 # notably camera_link and not camera_depth_frame below, not sure why
-                raw_b2c = self.tfBuffer.lookup_transform("camera", "base_footprint", rospy.Time()).transform
+                raw_b2c = self.tfBuffer.lookup_transform('/camera', '/base_footprint', rospy.Time()).transform
                 print("Breaking loop.")
                 break
             except:# tf2_ros.LookupException:

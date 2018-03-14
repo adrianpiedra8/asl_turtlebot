@@ -30,11 +30,11 @@ RESCUE_TIME = 3
 
 # Distance threshold to consider to stop detections as
 # the same stop sign
-STOP_SIGN_DIST_THRESH = 1
+STOP_SIGN_DIST_THRESH = 0.6
 
 # Distance threshold to consider to animal detections as
 # the same stop sign
-ANIMAL_DIST_THRESH = 1
+ANIMAL_DIST_THRESH = 0.6
 
 
 # state machine modes, not all implemented
@@ -133,7 +133,7 @@ class Supervisor:
 
             animal_type = msg.name
 
-            # check parameters to determine if this is a new animal
+            # check parametanimal_waypointsers to determine if this is a new animal
             # if it is a new animal, add it to the animal rescue queue
             # only add animals in the exploration state
             if self.mode == Mode.EXPLORE:
