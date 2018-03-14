@@ -112,12 +112,7 @@ class Supervisor:
         """ callback for when the detector has found a stop sign. Note that
         a distance of 0 can mean that the lidar did not pickup the stop sign at all """
 
-        # # distance of the stop sign
-        # dist = msg.distance
-
-        # # if close enough and in nav mode, stop
-        # if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
-        #     self.init_stop_sign()
+        # Check the location is valid i.e. 3rd element is non-zero
         if msg.location_W[2] == 1.0:
             observation = msg.location_W[:2]
             self.stop_signs.add_observation(observation)
@@ -125,6 +120,7 @@ class Supervisor:
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
 
+        # Check the location is valid i.e. 3rd element is non-zero
         if msg.location_W[2] == 1.0:
             pose = np.array([self.x, self.y, self.theta])
             bbox_height = msg.corners[3] - msg.corners[1]
@@ -133,8 +129,6 @@ class Supervisor:
 
             animal_type = msg.name
 
-            # check parametanimal_waypointsers to determine if this is a new animal
-            # if it is a new animal, add it to the animal rescue queue
             # only add animals in the exploration state
             if self.mode == Mode.EXPLORE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
