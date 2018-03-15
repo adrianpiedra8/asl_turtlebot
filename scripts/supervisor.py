@@ -20,7 +20,10 @@ THETA_EPS = .3
 STOP_TIME = 3
 
 # minimum distance from a stop sign to obey it
-STOP_MIN_DIST = .5
+STOP_MIN_DIST = .3
+
+# minimum distance frmo a stop sign to leave CROSS mode
+CROSS_MIN_DIST = .4
 
 # time taken to cross an intersection
 CROSSING_TIME = 3
@@ -69,7 +72,7 @@ class Supervisor:
         self.init_flag = 0
 
         # Landmark lists
-        self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH)
+        self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH) # List of coordinates for all stop signs
         self.animal_waypoints = landmarks.AnimalWaypoints(dist_thresh=ANIMAL_DIST_THRESH)
 
         # flag that determines if the rescue can be initiated
@@ -84,6 +87,7 @@ class Supervisor:
 
         # current mode
         self.mode = Mode.IDLE
+        self.modeafterstop = Mode.IDLE
         self.last_mode_printed = None
 
         self.nav_goal_publisher = rospy.Publisher('/cmd_nav', Pose2D, queue_size=10)
@@ -118,19 +122,23 @@ class Supervisor:
         """ callback for when the detector has found a stop sign. Note that
         a distance of 0 can mean that the lidar did not pickup the stop sign at all """
 
-        # # distance of the stop sign
-        # dist = msg.distance
-
-        # # if close enough and in nav mode, stop
-        # if dist > 0 and dist < STOP_MIN_DIST and self.mode == Mode.NAV:
-        #     self.init_stop_sign()
+        # Check the location is valid i.e. 3rd element is non-zero
         if msg.location_W[2] == 1.0:
             observation = msg.location_W[:2]
             self.stop_signs.add_observation(observation)
 
+    def stop_check(self):
+        """ checks if within stopping threshold """
+        current_pose = [self.x, self.y]
+        dist2stop = []
+        for i in range(self.stop_signs.locations.shape[0]):
+            dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
+        return (self.mode == Mode.NAV and any(dist < STOP_MIN_DIST for dist in dist2stop))
+
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
 
+        # Check the location is valid i.e. 3rd element is non-zero
         if msg.location_W[2] == 1.0:
             pose = np.array([self.x, self.y, self.theta])
             bbox_height = msg.corners[3] - msg.corners[1]
@@ -139,8 +147,6 @@ class Supervisor:
 
             animal_type = msg.name
 
-            # check parametanimal_waypointsers to determine if this is a new animal
-            # if it is a new animal, add it to the animal rescue queue
             # only add animals in the exploration state
             if self.mode == Mode.EXPLORE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
@@ -181,23 +187,19 @@ class Supervisor:
         """ initiates a stop sign maneuver """
 
         self.stop_sign_start = rospy.get_rostime()
-        self.mode = Mode.STOP
 
     def has_stopped(self):
         """ checks if stop sign maneuver is over """
 
         return (self.mode == Mode.STOP and (rospy.get_rostime()-self.stop_sign_start)>rospy.Duration.from_sec(STOP_TIME))
 
-    def init_crossing(self):
-        """ initiates an intersection crossing maneuver """
-
-        self.cross_start = rospy.get_rostime()
-        self.mode = Mode.CROSS
-
     def has_crossed(self):
         """ checks if crossing maneuver is over """
-
-        return (self.mode == Mode.CROSS and (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
+        current_pose = [self.x, self.y]
+        dist2stop = []
+        for i in range(self.stop_signs.locations.shape[0]):
+            dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
+        return (self.mode == Mode.CROSS and all(dist > CROSS_MIN_DIST for dist in dist2stop)) # (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
 
     def init_go_to_animal(self):
         # remove the animal from the rescue queue
@@ -274,16 +276,13 @@ class Supervisor:
             if self.has_stopped():
                 self.mode = Mode.CROSS
             else:
-                pass
+                self.stay_idle()
 
         elif self.mode == Mode.CROSS:
             # crossing an intersection
-            if not self.init_flag:
-                self.init_flag = 1
-                self.init_crossing()
 
             if self.has_crossed():
-                self.mode = Mode.NAV
+                self.mode = self.modeafterstop
             else:
                 self.nav_to_pose()
 
@@ -291,7 +290,11 @@ class Supervisor:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.IDLE
             else:
-                self.nav_to_pose()
+                if self.stop_check(): # Returns True if within STOP_MIN_DIST
+                    self.mode = Mode.STOP
+                    self.modeafterstop = Mode.NAV
+                else:
+                    self.nav_to_pose()
 
         elif self.mode == Mode.EXPLORE:
             # explore with teleop
@@ -323,7 +326,11 @@ class Supervisor:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
             else:
-                self.nav_to_pose()
+                if self.stop_check(): # Returns True if within STOP_MIN_DIST
+                    self.mode = Mode.STOP
+                    self.modeafterstop = Mode.GO_TO_ANIMAL
+                else:
+                    self.nav_to_pose()
 
         elif self.mode == Mode.RESCUE_ANIMAL:
             if not self.init_flag:
