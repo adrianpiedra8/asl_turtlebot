@@ -8,6 +8,9 @@ from asl_turtlebot.msg import DetectedObject
 import landmarks
 import tf
 import math
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
+#from asl_turtlebot import finalcount.wav
 from enum import Enum
 import numpy as np
 import pdb
@@ -50,12 +53,15 @@ class Mode(Enum):
     REQUEST_RESCUE = 6
     GO_TO_ANIMAL = 7
     RESCUE_ANIMAL = 8
+    BIKE_STOP = 9
 
 class Supervisor:
     """ the state machine of the turtlebot """
 
     def __init__(self):
         rospy.init_node('turtlebot_supervisor', anonymous=True)
+
+        soundhandle = SoundClient()
 
         # current pose
         self.x = 0
@@ -77,6 +83,10 @@ class Supervisor:
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
 
+        # flag that determines if the robot has found a bicycle and should honk
+        #self.bicycles = []
+        self.honk = False
+
         # string for target animal
         self.target_animal = None
 
@@ -91,8 +101,17 @@ class Supervisor:
 
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
-        rospy.Subscriber('/detector/dog', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/bird', DetectedObject, self.animal_detected_callback)
         rospy.Subscriber('/detector/cat', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/dog', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/horse', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/sheep', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/cow', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/elephant', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/bear', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/zebra', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/giraffe', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/bicycle', DetectedObject, self.bicycle_detected_callback)
         rospy.Subscriber('/rescue_on', Bool, self.rescue_on_callback)
         rospy.Subscriber('/cmd_state', Int8, self.cmd_state_callback)
 
@@ -144,6 +163,13 @@ class Supervisor:
             # only add animals in the exploration state
             if self.mode == Mode.EXPLORE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
+                self.theta_g = msg.location_W[3]
+
+    def bicycle_detected_callback(self, msg):
+    	"""callback for when the detector has found a bicycle"""
+        self.honk = True
+        self.bike_detected_start = rospy.get_rostime()
+            #self.stop_signs.add_observation(observation)
 
     def rescue_on_callback(self, msg):
         """callback for when the rescue is ready"""
@@ -226,6 +252,7 @@ class Supervisor:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
+        #self.bicycles.publish_all()
         self.stop_signs.publish_all()
         self.animal_waypoints.publish_all()
 
@@ -239,6 +266,18 @@ class Supervisor:
         if self.mode == Mode.IDLE:
             # send zero velocity
             self.stay_idle()
+
+        elif self.mode == Mode.BIKE_STOP:
+            if self.honk:
+            ### Make it honk
+                print("I'm honking!!!!!!")
+
+            if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(5)):
+                self.honk = False
+                print("I'm stopping the honking")
+                self.mode = self.modeafterstop
+            else:
+                self.stay_idle()
 
         elif self.mode == Mode.STOP:
             # at a stop sign
@@ -260,6 +299,10 @@ class Supervisor:
             else:
                 self.nav_to_pose()
 
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.CROSS
+
         elif self.mode == Mode.NAV:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.IDLE
@@ -270,9 +313,17 @@ class Supervisor:
                 else:
                     self.nav_to_pose()
 
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.NAV
+
         elif self.mode == Mode.EXPLORE:
             # explore with teleop
             pass
+
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.EXPLORE
 
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
@@ -282,6 +333,7 @@ class Supervisor:
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
+                    soundhandle.playWave('~/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.IDLE
@@ -296,7 +348,6 @@ class Supervisor:
 
                 self.init_go_to_animal()
 
-
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
             else:
@@ -305,6 +356,10 @@ class Supervisor:
                     self.modeafterstop = Mode.GO_TO_ANIMAL
                 else:
                     self.nav_to_pose()
+
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.GO_TO_ANIMAL
 
         elif self.mode == Mode.RESCUE_ANIMAL:
             if not self.init_flag:
