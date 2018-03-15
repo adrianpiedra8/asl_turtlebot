@@ -227,7 +227,7 @@ class Detector:
     def estimate_distance_from_function(self, box_height):
         
         dist_function = ((box_height - 149.46)/-5.6858) * 25.4
-        print("Ryan's D: " + str(dist_function) + "mm")
+        print("Ryan's Function distance: " + str(dist_function) + "mm")
 
         return None
 
@@ -325,17 +325,28 @@ class Detector:
                     thetaright += 2.*math.pi
 
                 box_height = np.abs(ymax - ymin)
-
+                animal_labels = range(16, 26)
+                animal_heights = [113,  # bird
+                                  113,  # cat 
+                                  113,  # dog
+                                  113,  # horse
+                                  113,  # sheep
+                                  113,  # cow
+                                  113,  # elephant
+                                  113,  # bear
+                                  113,  # zebra
+                                  113   # giraffe
+                                ]
                 if cl == 13:
-                    # print("DETECTED STOP SIGN!")
+                    # Detected a stop sign
                     obj_height = 64 #mm
                     est_dist_flag = True
-                elif cl == 17:
-                    # print("DETECTED CAT!")
-                    obj_height = 113
+                elif cl in animal_labels:
+                    # Detected an animal
+                    obj_height = animal_heights[cl-16]
                     est_dist_flag = True
                 else:
-                    # print("NOTHING ELSE MATTERS.")
+                    # Detected something else
                     obj_height = None
                     est_dist_flag = False
 
