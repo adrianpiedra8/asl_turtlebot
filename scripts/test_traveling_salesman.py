@@ -25,8 +25,12 @@ for i in range(8):
         x_goal = tuple(np.random.randint(0,height-2,2).tolist())
     x_goals.append(x_goal)
 
-ts_fast = traveling_salesman.traveling_salesman_fast(x_goals[0], x_goals[1:], width, height, occupancy)
+x_init = x_goals[0]
+x_goals = x_goals[1:]
 
+ts_fast_circuit = traveling_salesman.traveling_salesman_fast(x_init, x_goals, (0,0), (width, height), occupancy, 1)
+ts_fast = [x_init] + [x_goals[i] for i in ts_fast_circuit]
+ 
 fig1 = plt.figure()
 for i in range(len(ts_fast) - 1):
     astar = AStar((0, 0), (width, height), ts_fast[i], ts_fast[i+1], occupancy)
@@ -34,7 +38,9 @@ for i in range(len(ts_fast) - 1):
         astar.plot_path(fig1, r"$x_{"+str(i)+"}$", r"$x_{"+str(i+1)+"}$" + str(len(astar.path)), pcolor='blue')
 
 fig2 = plt.figure()
-ts_exact = traveling_salesman.traveling_salesman_exact(x_goals[0], x_goals[1:], width, height, occupancy)
+ts_exact_circuit = traveling_salesman.traveling_salesman_exact(x_init, x_goals, (0,0), (width, height), occupancy, 1)
+ts_exact = [x_init] + [x_goals[i] for i in ts_exact_circuit]
+
 for i in range(len(ts_exact) - 1):
     astar = AStar((0, 0), (width, height), ts_exact[i], ts_exact[i+1], occupancy)
     if astar.solve():
