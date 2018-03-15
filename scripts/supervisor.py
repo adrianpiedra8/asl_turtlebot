@@ -64,7 +64,7 @@ class Supervisor:
     def __init__(self):
         rospy.init_node('turtlebot_supervisor', anonymous=True)
 
-        soundhandle = SoundClient()
+        self.soundhandle = SoundClient()
 
         # current pose
         self.x = 0
@@ -361,13 +361,17 @@ class Supervisor:
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
 
+            print "Playing music?"
+            self.soundhandle.playWave('~/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
+
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
 
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
-                    soundhandle.playWave('~/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
+                    # print "Playing music?"
+                    # self.soundhandle.playWave('~/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.IDLE
