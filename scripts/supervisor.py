@@ -128,7 +128,6 @@ class Supervisor:
         rospy.Subscriber('/cmd_state', Int8, self.cmd_state_callback)
         rospy.Subscriber('/tsales_circuit', TSalesCircuit, self.tsales_circuit_callback)
 
-
         self.trans_listener = tf.TransformListener()
 
     def cmd_state_callback(self, msg):
@@ -428,8 +427,11 @@ class Supervisor:
                     self.mode = Mode.VICTORY
 
         elif self.mode == Mode.VICTORY:
-            self.stay_idle()
-
+            # self.stay_idle()
+            twist = Twist()
+            twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0.1
+            self.cmd_vel_publisher.publish(twist)
 
         else:
             raise Exception('This mode is not supported: %s'
