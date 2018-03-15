@@ -24,16 +24,17 @@ class Tester:
         object_publisher0 = rospy.Publisher('/detector/cat', DetectedObject, queue_size=10)
         object_publisher1 = rospy.Publisher('/detector/dog', DetectedObject, queue_size=10)
         object_publisher2 = rospy.Publisher('/detector/stop_sign', DetectedObject, queue_size=10)
+        object_publisher3 = rospy.Publisher('/detector/bicycle', DetectedObject, queue_size=10)
 
 
-        publishers = [object_publisher0, object_publisher1, object_publisher2]
-        names = ['cat', 'dog', 'stop_sign']
+        publishers = [object_publisher0, object_publisher1, object_publisher2, object_publisher3]
+        names = ['cat', 'dog', 'stop_sign', 'bicycle']
 
         rate = rospy.Rate(1) # 1 Hz
         count = 0
 
         while 1:
-            i = count % 3
+            i = count % 4
 
             # publishes the detected object and its location
             object_msg = DetectedObject()

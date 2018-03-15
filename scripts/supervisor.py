@@ -153,8 +153,8 @@ class Supervisor:
 
     def bicycle_detected_callback(self, msg):
     	"""callback for when the detector has found a bicycle"""
-            self.honk = True
-            self.bike_detected_start = rospy.get_rostime()
+        self.honk = True
+        self.bike_detected_start = rospy.get_rostime()
             #self.stop_signs.add_observation(observation)
 
     def rescue_on_callback(self, msg):
@@ -242,10 +242,6 @@ class Supervisor:
         self.stop_signs.publish_all()
         self.animal_waypoints.publish_all()
 
-        if self.honk:
-        	### Make it honk
-        	print("I'm honking!!!!!!")
-
         # logs the current mode
         if not(self.last_mode_printed == self.mode):
             rospy.loginfo("Current Mode: %s", self.mode)
@@ -258,12 +254,16 @@ class Supervisor:
             self.stay_idle()
 
         elif self.mode == Mode.BIKE_STOP:
+            if self.honk:
+            ### Make it honk
+                print("I'm honking!!!!!!")
 
-        	if(rospy.get_rostime - self.bike_detected_start > 5):
-        		self.honk = False
-        		self.mode = self.modeafterstop
-        	else:
-        		self.stay_idle()
+            if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(5)):
+                self.honk = False
+                print("I'm stopping the honking")
+                self.mode = self.modeafterstop
+            else:
+                self.stay_idle()
 
         elif self.mode == Mode.STOP:
             # at a stop sign
