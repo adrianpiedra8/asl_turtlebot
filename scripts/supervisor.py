@@ -47,6 +47,7 @@ class Mode(Enum):
     REQUEST_RESCUE = 6
     GO_TO_ANIMAL = 7
     RESCUE_ANIMAL = 8
+    BIKE_STOP = 9
 
 class Supervisor:
     """ the state machine of the turtlebot """
@@ -74,6 +75,10 @@ class Supervisor:
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
 
+        # flag that determines if the robot has found a bicycle and should honk
+        #self.bicycles = []
+        self.honk = False
+
         # string for target animal
         self.target_animal = None
 
@@ -89,6 +94,7 @@ class Supervisor:
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
         rospy.Subscriber('/detector/dog', DetectedObject, self.animal_detected_callback)
         rospy.Subscriber('/detector/cat', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/bicycle', DetectedObject, self.bicycle_detected_callback)
         rospy.Subscriber('/rescue_on', Bool, self.rescue_on_callback)
         rospy.Subscriber('/cmd_state', Int8, self.cmd_state_callback)
 
@@ -138,6 +144,13 @@ class Supervisor:
             # only add animals in the exploration state
             if self.mode == Mode.EXPLORE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
+
+    def bicycle_detected_callback(self, msg):
+    	"""callback for when the detector has found a bicycle"""
+            self.honk = True
+            self.bike_detected_start = rospy.get_rostime()
+            self.mode = Mode.BIKE_STOP
+            #self.stop_signs.add_observation(observation)
 
     def rescue_on_callback(self, msg):
         """callback for when the rescue is ready"""
@@ -224,8 +237,13 @@ class Supervisor:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
+        #self.bicycles.publish_all()
         self.stop_signs.publish_all()
         self.animal_waypoints.publish_all()
+
+        if self.honk:
+        	### Make it honk
+        	print("I'm honking!!!!!!")
 
         # logs the current mode
         if not(self.last_mode_printed == self.mode):
@@ -237,6 +255,14 @@ class Supervisor:
         if self.mode == Mode.IDLE:
             # send zero velocity
             self.stay_idle()
+
+        elif self.mode == Mode.BIKE_STOP:
+
+        	if(rospy.get_rostime - self.bike_detected_start > 5):
+        		self.honk == False
+        		self.mode = Mode.NAV
+        	else:
+        		self.stay_idle()
 
         elif self.mode == Mode.STOP:
             # at a stop sign
