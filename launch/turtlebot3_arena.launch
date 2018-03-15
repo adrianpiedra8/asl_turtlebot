@@ -1,5 +1,5 @@
 <launch>
-  <arg name="world_file"  default="$(find asl_turtlebot)/world/arena.world"/>
+  <arg name="world_file"  default="$(find asl_turtlebot)/world/project_city.world"/>
   <arg name="x_pos" default="1.0"/>
   <arg name="y_pos" default="-0.5"/>
   <arg name="z_pos" default="-1.5"/>
