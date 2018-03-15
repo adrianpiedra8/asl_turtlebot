@@ -94,6 +94,9 @@ class Supervisor:
         # status flag for traveling salesman circuit received
         self.tsales_circuit_received = 1
 
+        # lock waypoints
+        self.lock_animal_waypoints = 0
+
         # current mode
         self.mode = Mode.IDLE
         self.modeafterstop = Mode.IDLE
@@ -168,7 +171,7 @@ class Supervisor:
             animal_type = msg.name
 
             # only add animals in the exploration states
-            if self.mode == Mode.NAV or self.mode == Mode.IDLE:
+            if not self.lock_animal_waypoints:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
                 self.theta_g = msg.location_W[3]
 
@@ -247,6 +250,7 @@ class Supervisor:
 
     def init_plan_rescue(self):
         self.tsales_circuit_received = 0
+        self.lock_animal_waypoints = 1
 
     def plan_rescue(self):
         if self.animal_waypoints.poses.shape[0] > 0:
@@ -329,6 +333,8 @@ class Supervisor:
                 self.modeafterstop = Mode.CROSS
 
         elif self.mode == Mode.NAV:
+            self.lock_animal_waypoints = 0
+
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.IDLE
             else:
