@@ -89,6 +89,7 @@ class Supervisor:
         # flag that determines if the robot has found a bicycle and should honk
         #self.bicycles = []
         self.honk = False
+        self.playsound = True
 
         # string for target animal
         self.target_animal = None
@@ -298,11 +299,15 @@ class Supervisor:
 
         elif self.mode == Mode.BIKE_STOP:
             if self.honk:
-            ### Make it honk
-                print("I'm honking!!!!!!")
+
+                if (self.playsound):
+                self.soundhandle.playWave('NEEDS_UNPLUGGING_BADLY.ogg', 1.0)
+                self.playsound = False
+                print("Playing the sound")
 
             if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(BIKE_STOP_TIME)):
                 self.honk = False
+                self.playsound = True
                 print("I'm stopping the honking")
                 self.mode = self.modeafterstop
             else:
