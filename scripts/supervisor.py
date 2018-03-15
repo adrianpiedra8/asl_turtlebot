@@ -170,7 +170,7 @@ class Supervisor:
             # only add animals in the exploration states
             if self.mode == Mode.NAV or self.mode == Mode.IDLE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
-                # self.theta_g = msg.location_W[3]
+                self.theta_g = msg.location_W[3]
 
     def bicycle_detected_callback(self, msg):
     	"""callback for when the detector has found a bicycle"""

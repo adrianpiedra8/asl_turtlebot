@@ -46,7 +46,7 @@ class Tester:
             object_msg.thetaright = 0
             object_msg.corners = [0,0,0,0]
             loc = np.random.rand(2)*3
-            object_msg.location_W = loc.tolist() + [1]
+            object_msg.location_W = loc.tolist() + [1, 0]
 
             print('publishing DetectedObject ' + names[i])
             publishers[i].publish(object_msg)
