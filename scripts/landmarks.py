@@ -104,6 +104,7 @@ class AnimalWaypoints:
         self.animal_types = []
 
     def reorder(self, index):
+        print("Reordering waypoints to {}".format(index))
         self.poses = self.poses[index,:]
         self.locations = self.locations[index,:]
         self.bbox_heights = self.bbox_heights[index]

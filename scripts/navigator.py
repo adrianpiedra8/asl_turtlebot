@@ -96,13 +96,16 @@ class Navigator:
         rospy.Subscriber('/tsales_request', TSalesRequest, self.tsales_callback)
 
     def tsales_callback(self, msg):
+        print('Solving Traveling Salesman...')
         state_min = self.snap_to_grid((-self.plan_horizon, -self.plan_horizon))
         state_max = self.snap_to_grid((self.plan_horizon, self.plan_horizon))
         x_init = self.snap_to_grid((self.x, self.y))
+        x_goal = self.snap_to_grid((self.x_g, self.y_g))
 
         x_goals = []
         for i in range(len(msg.goal_x)):
-            x_goals.append((msg.goal_x[i], msg.goal_y[i]))
+            x_goal = self.snap_to_grid((msg.goal_x[i], msg.goal_y[i]))
+            x_goals.append((x_goal))
 
         if msg.do_fast:
             circuit = traveling_salesman.traveling_salesman_fast(
