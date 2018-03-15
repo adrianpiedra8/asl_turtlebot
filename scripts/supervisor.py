@@ -180,7 +180,6 @@ class Supervisor:
     	"""callback for when the detector has found a bicycle"""
         self.honk = True
         self.bike_detected_start = rospy.get_rostime()
-            #self.stop_signs.add_observation(observation)
 
     def rescue_on_callback(self, msg):
         """callback for when the rescue is ready"""
