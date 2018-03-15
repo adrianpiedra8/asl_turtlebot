@@ -32,7 +32,8 @@ def traveling_salesman_fast(x_init, x_goals, width, height, occupancy):
         wps.append(x_init)
         x_goals.remove(closest)
 
-    print(circuit_length)
+    print("Found path with length: {}:".format(circuit_length))
+    print(wps)
     return wps
 
 
@@ -85,5 +86,7 @@ def traveling_salesman_exact(x_init, x_goals, width, height, occupancy):
 
     wps = [wps[i] for i in min_circuit]
 
-    print(min_length)
+    print("Found path with length: {}:".format(min_length))
+    print(min_circuit)
+    print(wps)
     return wps
