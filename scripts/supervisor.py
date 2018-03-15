@@ -8,6 +8,9 @@ from asl_turtlebot.msg import DetectedObject
 import landmarks
 import tf
 import math
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
+#from asl_turtlebot import finalcount.wav
 from enum import Enum
 import numpy as np
 import pdb
@@ -53,6 +56,8 @@ class Supervisor:
 
     def __init__(self):
         rospy.init_node('turtlebot_supervisor', anonymous=True)
+
+        soundhandle = SoundClient()
 
         # current pose
         self.x = 0
@@ -279,6 +284,7 @@ class Supervisor:
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
+                    soundhandle.playWave('~/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.IDLE
