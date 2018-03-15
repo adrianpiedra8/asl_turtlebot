@@ -408,7 +408,8 @@ class Supervisor:
                     self.mode = Mode.VICTORY
 
         elif self.mode == Mode.VICTORY:
-            rospy.spin()
+            self.stay_idle()
+
 
         else:
             raise Exception('This mode is not supported: %s'
