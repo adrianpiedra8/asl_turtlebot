@@ -81,6 +81,6 @@ class Tester:
 
 if __name__ == '__main__':
     s = Tester()
-    s.rescue_on()
-    # s.object_msg()
+    # s.rescue_on()
+    s.object_msg()
     # s.spot()

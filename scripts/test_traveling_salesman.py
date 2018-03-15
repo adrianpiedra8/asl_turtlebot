@@ -9,8 +9,8 @@ import pdb
 width = 51
 height = 51
 num_obs = 8
-min_size = 15
-max_size = 25
+min_size = 10
+max_size = 15
 obs_corners_x = np.random.randint(0,width,num_obs)
 obs_corners_y = np.random.randint(0,height,num_obs)
 obs_lower_corners = np.vstack([obs_corners_x,obs_corners_y]).T
@@ -19,7 +19,7 @@ obs_upper_corners = obs_lower_corners + obs_sizes
 obstacles = zip(obs_lower_corners,obs_upper_corners)
 occupancy = DetOccupancyGrid2D(width, height, obstacles)
 x_goals = []
-for i in range(8):
+for i in range(10S):
     x_goal = tuple(np.random.randint(0,height-2,2).tolist())
     while not (occupancy.is_free(x_goal)):
         x_goal = tuple(np.random.randint(0,height-2,2).tolist())

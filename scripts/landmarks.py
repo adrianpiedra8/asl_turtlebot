@@ -91,8 +91,8 @@ class StopSigns:
         # Increment observations count
         self.observations_count[index] = n + 1
 
-        rospy.loginfo("Incorporating stop sign observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
-              index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
+        # rospy.loginfo("Incorporating stop sign observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
+              # index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
 
 class AnimalWaypoints:
     def __init__(self, dist_thresh=1):
@@ -104,6 +104,7 @@ class AnimalWaypoints:
         self.animal_types = []
 
     def reorder(self, index):
+        print("Reordering waypoints to {}".format(index))
         self.poses = self.poses[index,:]
         self.locations = self.locations[index,:]
         self.bbox_heights = self.bbox_heights[index]
@@ -153,8 +154,8 @@ class AnimalWaypoints:
         # Increment observations count
         self.observations_count[index] = n + 1
 
-        rospy.loginfo("Incorporating animal waypoint observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
-                      index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
+        # rospy.loginfo("Incorporating animal waypoint observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
+                      # index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
 
         # Only update pose if new observation has a bigger bounding box
         if bbox_height > self.bbox_heights[index]:

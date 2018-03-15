@@ -251,22 +251,34 @@ class Supervisor:
         return (self.mode == Mode.RESCUE_ANIMAL and (rospy.get_rostime()-self.rescue_start)>rospy.Duration.from_sec(RESCUE_TIME))
 
     def init_plan_rescue(self):
+        print('init plan rescue')
         self.tsales_circuit_received = 0
         self.lock_animal_waypoints = 1
 
-    def plan_rescue(self):
         if self.animal_waypoints.poses.shape[0] > 0:
             tsales_request = TSalesRequest()
             tsales_request.goal_x = self.animal_waypoints.poses[:,0].tolist()
             tsales_request.goal_y = self.animal_waypoints.poses[:,1].tolist()
             tsales_request.do_fast = 0
+            print('publish tsales request')
             self.tsales_request_publisher.publish(tsales_request) 
         else: 
             self.tsales_circuit_received = 1
 
     def tsales_circuit_callback(self, msg): 
-        circuit = np.array(map(int, msg.circuit))
-        self.animal_waypoints.reorder(circuit)
+        print('tsales circuit callback')
+        try:
+            circuit = np.array(map(int, msg.circuit))
+        except:
+            rospy.loginfo('Traveling salesman failed')
+            self.tsales_circuit_received = 1
+            return
+
+        if circuit.shape[0] == self.animal_waypoints.poses.shape[0]:
+            self.animal_waypoints.reorder(circuit)
+        else:         
+            rospy.loginfo('Traveling salesman failed')
+
         self.tsales_circuit_received = 1
 
     def loop(self):
@@ -361,8 +373,6 @@ class Supervisor:
             
             if self.tsales_circuit_received:
                 self.mode = Mode.REQUEST_RESCUE
-            else:
-                self.plan_rescue()
 
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
