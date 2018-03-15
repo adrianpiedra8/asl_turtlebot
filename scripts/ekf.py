@@ -295,53 +295,53 @@ class SLAM_EKF(EKF):
 
         return z, R, H
 
-	# Adapt this method from Localization_EKF.map_line_to_predicted_measurement.
-	#
-	# Note that instead of the actual parameters m = (alpha, r) we pass in the map line index j
-	# so that we know which components of the Jacobian to fill in.
-	def map_line_to_predicted_measurement(self, j):
-		alpha, r = self.x[(3+2*j):(3+2*j+2)]    # j is zero-indexed! (yeah yeah I know this doesn't match the pset writeup)
+    # Adapt this method from Localization_EKF.map_line_to_predicted_measurement.
+    #
+    # Note that instead of the actual parameters m = (alpha, r) we pass in the map line index j
+    # so that we know which components of the Jacobian to fill in.
+    def map_line_to_predicted_measurement(self, j):
+        alpha, r = self.x[(3+2*j):(3+2*j+2)]    # j is zero-indexed! (yeah yeah I know this doesn't match the pset writeup)
 
-		#### TODO ####
-		# compute h, Hx (you may find the skeleton for computing Hx below useful)
+        #### TODO ####
+        # compute h, Hx (you may find the skeleton for computing Hx below useful)
 
-		# Hx = np.zeros((2,self.x.size))
-		# Hx[:,:3] = FILLMEIN
-		# First two map lines are assumed fixed so we don't want to propagate any measurement correction to them
-		# if j > 1:
-		#     Hx[0, 3+2*j] = FILLMEIN
-		#     Hx[1, 3+2*j] = FILLMEIN
-		#     Hx[0, 3+2*j+1] = FILLMEIN
-		#     Hx[1, 3+2*j+1] = FILLMEIN
+        # Hx = np.zeros((2,self.x.size))
+        # Hx[:,:3] = FILLMEIN
+        # First two map lines are assumed fixed so we don't want to propagate any measurement correction to them
+        # if j > 1:
+        #     Hx[0, 3+2*j] = FILLMEIN
+        #     Hx[1, 3+2*j] = FILLMEIN
+        #     Hx[0, 3+2*j+1] = FILLMEIN
+        #     Hx[1, 3+2*j+1] = FILLMEIN
 
-		##############
+        ##############
 
-		# find the pose of the robot in the world frame
-		x, y, th = self.x[:3]
-		# find the pose of the camera in the robot frame
-		x_cam, y_cam, th_cam = self.tf_base_to_camera
+        # find the pose of the robot in the world frame
+        x, y, th = self.x[:3]
+        # find the pose of the camera in the robot frame
+        x_cam, y_cam, th_cam = self.tf_base_to_camera
 
-		# compute the line parameters in the camera frame
-		h = np.array([alpha - th - th_cam, r - x * cos(alpha) - y * sin(alpha) - x_cam * cos(alpha - th) - y_cam * sin(alpha - th)])
-		
-		# compute the Jacobian of h with respect to the belief mean
-		Hx = np.zeros((2,self.x.size))
-		Hx[:,:3] = np.array([
-			[0, 0, -1],
-			[-cos(alpha), -sin(alpha), -x_cam * sin(alpha - th) + y_cam * cos(alpha - th)]
-			])
-		# First two map lines are assumed fixed so we don't want to propagate any measurement correction to them
-		if j > 1:
-			Hx[0, 3+2*j] = 1
-			Hx[1, 3+2*j] = x * sin(alpha) - y * cos(alpha) + x_cam * sin(alpha - th) - y_cam * cos(alpha - th)
-			Hx[0, 3+2*j+1] = 0
-			Hx[1, 3+2*j+1] = 1
+        # compute the line parameters in the camera frame
+        h = np.array([alpha - th - th_cam, r - x * cos(alpha) - y * sin(alpha) - x_cam * cos(alpha - th) - y_cam * sin(alpha - th)])
+        
+        # compute the Jacobian of h with respect to the belief mean
+        Hx = np.zeros((2,self.x.size))
+        Hx[:,:3] = np.array([
+            [0, 0, -1],
+            [-cos(alpha), -sin(alpha), -x_cam * sin(alpha - th) + y_cam * cos(alpha - th)]
+            ])
+        # First two map lines are assumed fixed so we don't want to propagate any measurement correction to them
+        if j > 1:
+            Hx[0, 3+2*j] = 1
+            Hx[1, 3+2*j] = x * sin(alpha) - y * cos(alpha) + x_cam * sin(alpha - th) - y_cam * cos(alpha - th)
+            Hx[0, 3+2*j+1] = 0
+            Hx[1, 3+2*j+1] = 1
 
-		flipped, h = normalize_line_parameters(h)
-		if flipped:
-			Hx[1,:] = -Hx[1,:]
+        flipped, h = normalize_line_parameters(h)
+        if flipped:
+            Hx[1,:] = -Hx[1,:]
 
-		return h, Hx
+        return h, Hx
 
     # Adapt this method from Localization_EKF.associate_measurements.
     def associate_measurements(self, rawZ, rawR):

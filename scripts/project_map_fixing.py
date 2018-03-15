@@ -121,8 +121,25 @@ class EKF_SLAM_Visualizer:
         self.EKF_map_marker.color.b = 0.0
         self.EKF_map_marker.color.a = 1.0
 
+        # self.lane_lines_map_pub = rospy.Publisher("lane_lines_map", Marker, queue_size=10)
+        # self.lane_lines_map_marker = Marker()
+        # self.lane_lines_map_marker.header.frame_id = "/world"
+        # self.lane_lines_map_marker.header.stamp = rospy.Time.now()
+        # self.lane_lines_map_marker.ns = "lane_lines"
+        # self.lane_lines_map_marker.type = 5    # line list
+        # self.lane_lines_map_marker.pose.orientation.w = 1.0
+        # self.lane_lines_map_marker.scale.x = .025
+        # self.lane_lines_map_marker.scale.y = .025
+        # self.lane_lines_map_marker.scale.z = .025
+        # self.lane_lines_map_marker.color.r = 1.0
+        # self.lane_lines_map_marker.color.g = 0.0
+        # self.lane_lines_map_marker.color.b = 0.0
+        # self.lane_lines_map_marker.color.a = 1.0
+        # self.lane_lines_map_marker.lifetime = rospy.Duration(1000)
+        # self.lane_lines_map_marker.points = sum([[Point(p1[0], p1[1], 0),
+        #                                           Point(p2[0], p2[1], 0)] for p1, p2 in LANE_LINES_DASHED], [])
 
-
+        
     def scan_callback(self, msg):
         if self.EKF:
             self.scans.append((msg.header.stamp,
@@ -156,6 +173,7 @@ class EKF_SLAM_Visualizer:
                             get_yaw_from_quaternion(self.latest_pose.orientation)])
         P0_pose = NoiseParams["P0"]
         self.EKF_time = self.latest_pose_time
+
         self.EKF = SLAM_EKF(np.concatenate((x0_pose, self.x0_map)), scipy.linalg.block_diag(P0_pose, self.P0_map),
                             NoiseParams["Q"], self.base_to_camera, 2*NoiseParams["g"])
         self.OLC = SLAM_EKF(np.concatenate((x0_pose, self.x0_map)), scipy.linalg.block_diag(P0_pose, self.P0_map),
