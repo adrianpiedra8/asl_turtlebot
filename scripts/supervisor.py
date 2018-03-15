@@ -366,8 +366,8 @@ class Supervisor:
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
 
-            print "Playing music?"
-            self.soundhandle.playWave('NEEDS_UNPLUGGING_BADLY.ogg', 1.0)
+            #print "Playing music?"
+            #self.soundhandle.playWave('NEEDS_UNPLUGGING_BADLY.ogg', 1.0)
 
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
