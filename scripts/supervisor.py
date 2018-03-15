@@ -56,6 +56,7 @@ class Mode(Enum):
     GO_TO_ANIMAL = 6
     RESCUE_ANIMAL = 7
     BIKE_STOP = 8
+    VICTORY = 9
 
 class Supervisor:
     """ the state machine of the turtlebot """
@@ -377,7 +378,7 @@ class Supervisor:
             if not self.init_flag:
                 self.init_flag = 1
                 if self.animal_waypoints.length() == 0:
-                    self.mode = Mode.IDLE
+                    self.mode = Mode.VICTORY
 
                 self.init_go_to_animal()
 
@@ -404,7 +405,10 @@ class Supervisor:
                 if self.animal_waypoints.length() > 0:
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
-                    self.mode = Mode.IDLE
+                    self.mode = Mode.VICTORY
+
+        elif self.mode == Mode.VICTORY:
+            rospy.spin()
 
         else:
             raise Exception('This mode is not supported: %s'
