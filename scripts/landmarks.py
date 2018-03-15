@@ -45,6 +45,8 @@ def publish_marker(name, loc, type):
     marker.pose.position.x = loc[0]
     marker.pose.position.y = loc[1]
     marker.pose.position.z = 0
+    marker.ns = type
+    marker.text = name
 
     marker_pub.publish(marker)
 
@@ -103,7 +105,7 @@ class AnimalWaypoints:
 
     def publish_all(self):
         for i in range(self.length()):
-            publish_marker(self.animal_types[i] + str(i), self.locations[i,:], 'animal')
+            publish_marker('animal' + str(i), self.locations[i,:], 'animal')
 
     def length(self):
         return self.poses.shape[0]
