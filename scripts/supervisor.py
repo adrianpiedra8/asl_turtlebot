@@ -265,8 +265,18 @@ class Supervisor:
             self.tsales_circuit_received = 1
 
     def tsales_circuit_callback(self, msg): 
-        circuit = np.array(map(int, msg.circuit))
-        self.animal_waypoints.reorder(circuit)
+        try:
+            circuit = np.array(map(int, msg.circuit))
+        except:
+            rospy.loginfo('Traveling salesman failed')
+            self.tsales_circuit_received = 1
+            return
+
+        if circuit.shape[0] == self.animal_waypoints.poses.shape[0]:
+            self.animal_waypoints.reorder(circuit)
+        else:         
+            rospy.loginfo('Traveling salesman failed')
+
         self.tsales_circuit_received = 1
 
     def loop(self):
