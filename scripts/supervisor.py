@@ -301,9 +301,9 @@ class Supervisor:
             if self.honk:
 
                 if (self.playsound):
-                self.soundhandle.playWave('NEEDS_UNPLUGGING_BADLY.ogg', 1.0)
-                self.playsound = False
-                print("Playing the sound")
+                    self.soundhandle.playWave('NEEDS_UNPLUGGING_BADLY.ogg', 1.0)
+                    self.playsound = False
+                    print("Playing the sound")
 
             if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(BIKE_STOP_TIME)):
                 self.honk = False
