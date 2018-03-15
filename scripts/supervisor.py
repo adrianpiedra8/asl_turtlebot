@@ -8,9 +8,9 @@ from asl_turtlebot.msg import DetectedObject, TSalesRequest, TSalesCircuit
 import landmarks
 import tf
 import math
-# from sound_play.msg import SoundRequest
-# from sound_play.libsoundplay import SoundClient
-#from asl_turtlebot import finalcount.wav
+from sound_play.msg import SoundRequest
+from sound_play.libsoundplay import SoundClient
+# from asl_turtlebot import finalcount.wav
 from enum import Enum
 import numpy as np
 import traveling_salesman
@@ -64,7 +64,7 @@ class Supervisor:
     def __init__(self):
         rospy.init_node('turtlebot_supervisor', anonymous=True)
 
-        # soundhandle = SoundClient()
+        soundhandle = SoundClient()
 
         # current pose
         self.x = 0
