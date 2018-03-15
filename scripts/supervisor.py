@@ -103,6 +103,7 @@ class Supervisor:
         # current mode
         self.mode = Mode.IDLE
         self.modeafterstop = Mode.IDLE
+        self.modeafterhonk = Mode.IDLE
         self.last_mode_printed = None
 
         self.nav_goal_publisher = rospy.Publisher('/cmd_nav', Pose2D, queue_size=10)
@@ -309,7 +310,7 @@ class Supervisor:
                 self.honk = False
                 self.playsound = True
                 print("I'm stopping the honking")
-                self.mode = self.modeafterstop
+                self.mode = self.modeafterhonk
             else:
                 self.stay_idle()
 
@@ -335,7 +336,7 @@ class Supervisor:
 
             if self.honk:
                 self.mode = Mode.BIKE_STOP
-                self.modeafterstop = Mode.CROSS
+                self.modeafterhonk = Mode.CROSS
 
         elif self.mode == Mode.NAV:
             self.lock_animal_waypoints = 0
@@ -351,7 +352,7 @@ class Supervisor:
 
             if self.honk:
                 self.mode = Mode.BIKE_STOP
-                self.modeafterstop = Mode.NAV
+                self.modeafterhonk = Mode.NAV
             
         elif self.mode == Mode.PLAN_RESCUE:
             if not self.init_flag:
@@ -402,7 +403,7 @@ class Supervisor:
 
             if self.honk:
                 self.mode = Mode.BIKE_STOP
-                self.modeafterstop = Mode.GO_TO_ANIMAL
+                self.modeafterhonk = Mode.GO_TO_ANIMAL
 
         elif self.mode == Mode.RESCUE_ANIMAL:
             if not self.init_flag:
