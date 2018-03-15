@@ -43,6 +43,7 @@ STOP_SIGN_DIST_THRESH = 0.6
 # the same stop sign
 ANIMAL_DIST_THRESH = 0.6
 
+BIKE_STOP_TIME = 5
 
 # state machine modes, not all implemented
 class Mode(Enum):
@@ -299,7 +300,7 @@ class Supervisor:
             ### Make it honk
                 print("I'm honking!!!!!!")
 
-            if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(5)):
+            if (rospy.get_rostime() - self.bike_detected_start > rospy.Duration.from_sec(BIKE_STOP_TIME)):
                 self.honk = False
                 print("I'm stopping the honking")
                 self.mode = self.modeafterstop
