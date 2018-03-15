@@ -4,7 +4,7 @@ import rospy
 from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float32MultiArray, String, Bool, Int8
 from geometry_msgs.msg import Twist, PoseArray, Pose2D, PoseStamped
-from asl_turtlebot.msg import DetectedObject
+from asl_turtlebot.msg import DetectedObject, TSalesRequest, TSalesCircuit
 import landmarks
 import tf
 import math
@@ -13,6 +13,7 @@ from sound_play.libsoundplay import SoundClient
 #from asl_turtlebot import finalcount.wav
 from enum import Enum
 import numpy as np
+import traveling_salesman
 import pdb
 
 # threshold at which we consider the robot at a location
@@ -45,15 +46,15 @@ ANIMAL_DIST_THRESH = 0.6
 
 # state machine modes, not all implemented
 class Mode(Enum):
-    IDLE = 1
-    STOP = 2
-    CROSS = 3
-    NAV = 4
-    EXPLORE = 5
-    REQUEST_RESCUE = 6
-    GO_TO_ANIMAL = 7
-    RESCUE_ANIMAL = 8
-    BIKE_STOP = 9
+    IDLE = 0
+    STOP = 1
+    CROSS = 2
+    NAV = 3
+    PLAN_RESCUE = 4
+    REQUEST_RESCUE = 5
+    GO_TO_ANIMAL = 6
+    RESCUE_ANIMAL = 7
+    BIKE_STOP = 8
 
 class Supervisor:
     """ the state machine of the turtlebot """
@@ -90,6 +91,9 @@ class Supervisor:
         # string for target animal
         self.target_animal = None
 
+        # status flag for traveling salesman circuit received
+        self.tsales_circuit_received = 1
+
         # current mode
         self.mode = Mode.IDLE
         self.modeafterstop = Mode.IDLE
@@ -98,6 +102,7 @@ class Supervisor:
         self.nav_goal_publisher = rospy.Publisher('/cmd_nav', Pose2D, queue_size=10)
         self.cmd_vel_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.rescue_ready_publisher = rospy.Publisher('/ready_to_rescue', Bool, queue_size=10)
+        self.tsales_request_publisher = rospy.Publisher('/tsales_request', TSalesRequest, queue_size=10)
 
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
@@ -114,6 +119,8 @@ class Supervisor:
         rospy.Subscriber('/detector/bicycle', DetectedObject, self.bicycle_detected_callback)
         rospy.Subscriber('/rescue_on', Bool, self.rescue_on_callback)
         rospy.Subscriber('/cmd_state', Int8, self.cmd_state_callback)
+        rospy.Subscriber('/tsales_circuit', TSalesCircuit, self.tsales_circuit_callback)
+
 
         self.trans_listener = tf.TransformListener()
 
@@ -238,6 +245,21 @@ class Supervisor:
 
         return (self.mode == Mode.RESCUE_ANIMAL and (rospy.get_rostime()-self.rescue_start)>rospy.Duration.from_sec(RESCUE_TIME))
 
+    def init_plan_rescue(self):
+        self.tsales_circuit_received = 0
+
+    def plan_rescue(self):
+        tsales_request = TSalesRequest()
+        tsales_request.goal_x = self.animal_waypoints.poses[:.0].tolist()
+        tsales_reuquest.goal_y = self.animal_waypoints.poses[:.1].tolist()
+        tsales_reuquest.do_fast = False
+        self.tsales_request_publisher.publish(tsales_request) 
+
+    def tsales_circuit_callback(self, msg): 
+        circuit = np.array(msg.data)
+        self.animal_waypoints.reorder(circuit)
+        self.tsales_circuit_received = 1
+
     def loop(self):
         """ the main loop of the robot. At each iteration, depending on its
         mode (i.e. the finite state machine's state), if takes appropriate
@@ -316,17 +338,24 @@ class Supervisor:
             if self.honk:
                 self.mode = Mode.BIKE_STOP
                 self.modeafterstop = Mode.NAV
-
-        elif self.mode == Mode.EXPLORE:
-            # explore with teleop
-            pass
-
-            if self.honk:
-                self.mode = Mode.BIKE_STOP
-                self.modeafterstop = Mode.EXPLORE
+            
+        elif self.mode == PLAN_RESCUE:
+            if not self.init_flag:
+                self.init_plan_rescue()
+                self.init_flag = 1
+            
+            if self.tsales_circuit_received:
+                self.mode = Mode.REQUEST_RESCUE
+            else:
+                plan_rescue()
 
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
+
+            if not self.init_flag:
+                self.init_request_resecue()
+                self.init_flag = 1
+
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
 

@@ -103,6 +103,13 @@ class AnimalWaypoints:
         self.observations_count = np.zeros((0))
         self.animal_types = []
 
+    def reorder(self, index):
+        self.poses = self.poses[index,:]
+        self.locations = self.locations[index,:]
+        self.bbox_heights = self.bbox_heights[index]
+        self.observations_count = self.observation_count[index]
+        self.animal_types = self.animal_types[index]
+
     def publish_all(self):
         for i in range(self.length()):
             publish_marker('animal' + str(i), self.locations[i,:], 'animal')

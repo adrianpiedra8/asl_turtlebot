@@ -13,6 +13,8 @@ from astar import AStar
 from grids import StochOccupancyGrid2D
 import scipy.interpolate
 import matplotlib.pyplot as plt
+import traveling_salesman
+from asl_turtlebot.msg import TSalesRequest, TSalesCircuit
 
 
 # threshold at which navigator switches
@@ -84,12 +86,32 @@ class Navigator:
         self.nav_pose_pub = rospy.Publisher('/cmd_pose', Pose2D, queue_size=10)
         self.nav_pathsp_pub = rospy.Publisher('/cmd_path_sp', PoseStamped, queue_size=10)
         self.nav_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        self.tsales_circuit_pub = rospy.Publisher('/tsales_circuit', TSalesCircuit, queue_size=10)
 
         self.trans_listener = tf.TransformListener()
 
         rospy.Subscriber('/map', OccupancyGrid, self.map_callback)
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
+        rospy.Subscriber('/tsales_request', TSalesRequest, self.tsales_callback)
+
+    def tsales_callback(self, msg):
+        state_min = self.snap_to_grid((-self.plan_horizon, -self.plan_horizon))
+        state_max = self.snap_to_grid((self.plan_horizon, self.plan_horizon))
+
+        x_init = tuple(msg.x_init)
+        x_goals = []
+        for i in range(len(msg.goal_x)):
+            x_goals.append(tuple(msg.goal_x[i], msg.goal_y[i]))
+
+        if msg.do_fast:
+            circuit = traveling_salesman.traveling_salesman_fast(
+                x_init, x_goals, state_min, state_max, self.occupancy, self.plan_resolution)
+        else:
+            circuit = traveling_salesmantraveling_salesman_exact(
+                x_init, x_goals, state_min, state_max, self.occupancy, self.plan_resolution)
+
+        self.tsales_circuit_pub(circuit)
 
     def cmd_nav_callback(self, data):
         self.x_g = data.x
