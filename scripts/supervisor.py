@@ -155,7 +155,6 @@ class Supervisor:
     	"""callback for when the detector has found a bicycle"""
             self.honk = True
             self.bike_detected_start = rospy.get_rostime()
-            self.mode = Mode.BIKE_STOP
             #self.stop_signs.add_observation(observation)
 
     def rescue_on_callback(self, msg):
@@ -261,8 +260,8 @@ class Supervisor:
         elif self.mode == Mode.BIKE_STOP:
 
         	if(rospy.get_rostime - self.bike_detected_start > 5):
-        		self.honk == False
-        		self.mode = Mode.NAV
+        		self.honk = False
+        		self.mode = self.modeafterstop
         	else:
         		self.stay_idle()
 
@@ -286,6 +285,10 @@ class Supervisor:
             else:
                 self.nav_to_pose()
 
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.CROSS
+
         elif self.mode == Mode.NAV:
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.IDLE
@@ -296,9 +299,17 @@ class Supervisor:
                 else:
                     self.nav_to_pose()
 
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.NAV
+
         elif self.mode == Mode.EXPLORE:
             # explore with teleop
             pass
+
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.EXPLORE
 
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
@@ -322,7 +333,6 @@ class Supervisor:
 
                 self.init_go_to_animal()
 
-
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
             else:
@@ -331,6 +341,10 @@ class Supervisor:
                     self.modeafterstop = Mode.GO_TO_ANIMAL
                 else:
                     self.nav_to_pose()
+
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterstop = Mode.GO_TO_ANIMAL
 
         elif self.mode == Mode.RESCUE_ANIMAL:
             if not self.init_flag:
