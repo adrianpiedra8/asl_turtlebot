@@ -107,9 +107,9 @@ class AnimalWaypoints:
         self.poses = self.poses[index,:]
         self.locations = self.locations[index,:]
         self.bbox_heights = self.bbox_heights[index]
-        self.observations_count = self.observation_count[index]
-        self.animal_types = self.animal_types[index]
-
+        self.observations_count = self.observations_count[index]
+        self.animal_types =  [self.animal_types[i] for i in index.tolist()]
+ 
     def publish_all(self):
         for i in range(self.length()):
             publish_marker('animal' + str(i), self.locations[i,:], 'animal')

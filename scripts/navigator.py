@@ -98,20 +98,22 @@ class Navigator:
     def tsales_callback(self, msg):
         state_min = self.snap_to_grid((-self.plan_horizon, -self.plan_horizon))
         state_max = self.snap_to_grid((self.plan_horizon, self.plan_horizon))
+        x_init = self.snap_to_grid((self.x, self.y))
 
-        x_init = tuple(msg.x_init)
         x_goals = []
         for i in range(len(msg.goal_x)):
-            x_goals.append(tuple(msg.goal_x[i], msg.goal_y[i]))
+            x_goals.append((msg.goal_x[i], msg.goal_y[i]))
 
         if msg.do_fast:
             circuit = traveling_salesman.traveling_salesman_fast(
                 x_init, x_goals, state_min, state_max, self.occupancy, self.plan_resolution)
         else:
-            circuit = traveling_salesmantraveling_salesman_exact(
+            circuit = traveling_salesman.traveling_salesman_exact(
                 x_init, x_goals, state_min, state_max, self.occupancy, self.plan_resolution)
 
-        self.tsales_circuit_pub(circuit)
+        ts_circ = TSalesCircuit()
+        ts_circ.circuit = circuit
+        self.tsales_circuit_pub.publish(ts_circ)
 
     def cmd_nav_callback(self, data):
         self.x_g = data.x

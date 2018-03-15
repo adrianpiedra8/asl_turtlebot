@@ -8,8 +8,8 @@ from asl_turtlebot.msg import DetectedObject, TSalesRequest, TSalesCircuit
 import landmarks
 import tf
 import math
-from sound_play.msg import SoundRequest
-from sound_play.libsoundplay import SoundClient
+# from sound_play.msg import SoundRequest
+# from sound_play.libsoundplay import SoundClient
 #from asl_turtlebot import finalcount.wav
 from enum import Enum
 import numpy as np
@@ -62,7 +62,7 @@ class Supervisor:
     def __init__(self):
         rospy.init_node('turtlebot_supervisor', anonymous=True)
 
-        soundhandle = SoundClient()
+        # soundhandle = SoundClient()
 
         # current pose
         self.x = 0
@@ -153,7 +153,7 @@ class Supervisor:
         dist2stop = []
         for i in range(self.stop_signs.locations.shape[0]):
             dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
-        return (self.mode == Mode.NAV and any(dist < STOP_MIN_DIST for dist in dist2stop))
+        return any(dist < STOP_MIN_DIST for dist in dist2stop)
 
     def animal_detected_callback(self, msg):
         """ callback for when the detector has found an animal """
@@ -167,10 +167,10 @@ class Supervisor:
 
             animal_type = msg.name
 
-            # only add animals in the exploration state
-            if self.mode == Mode.EXPLORE:
+            # only add animals in the exploration states
+            if self.mode == Mode.NAV or self.mode == Mode.IDLE:
                 self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
-                self.theta_g = msg.location_W[3]
+                # self.theta_g = msg.location_W[3]
 
     def bicycle_detected_callback(self, msg):
     	"""callback for when the detector has found a bicycle"""
@@ -249,14 +249,17 @@ class Supervisor:
         self.tsales_circuit_received = 0
 
     def plan_rescue(self):
-        tsales_request = TSalesRequest()
-        tsales_request.goal_x = self.animal_waypoints.poses[:.0].tolist()
-        tsales_reuquest.goal_y = self.animal_waypoints.poses[:.1].tolist()
-        tsales_reuquest.do_fast = False
-        self.tsales_request_publisher.publish(tsales_request) 
+        if self.animal_waypoints.poses.shape[0] > 0:
+            tsales_request = TSalesRequest()
+            tsales_request.goal_x = self.animal_waypoints.poses[:,0].tolist()
+            tsales_request.goal_y = self.animal_waypoints.poses[:,1].tolist()
+            tsales_request.do_fast = 0
+            self.tsales_request_publisher.publish(tsales_request) 
+        else: 
+            self.tsales_circuit_received = 1
 
     def tsales_circuit_callback(self, msg): 
-        circuit = np.array(msg.data)
+        circuit = np.array(map(int, msg.circuit))
         self.animal_waypoints.reorder(circuit)
         self.tsales_circuit_received = 1
 
@@ -339,7 +342,7 @@ class Supervisor:
                 self.mode = Mode.BIKE_STOP
                 self.modeafterstop = Mode.NAV
             
-        elif self.mode == PLAN_RESCUE:
+        elif self.mode == Mode.PLAN_RESCUE:
             if not self.init_flag:
                 self.init_plan_rescue()
                 self.init_flag = 1
@@ -347,14 +350,10 @@ class Supervisor:
             if self.tsales_circuit_received:
                 self.mode = Mode.REQUEST_RESCUE
             else:
-                plan_rescue()
+                self.plan_rescue()
 
         elif self.mode == Mode.REQUEST_RESCUE:
             # publish message that rescue is ready
-
-            if not self.init_flag:
-                self.init_request_resecue()
-                self.init_flag = 1
 
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
