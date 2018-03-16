@@ -43,7 +43,11 @@ STOP_SIGN_DIST_THRESH = 0.6
 # the same stop sign
 ANIMAL_DIST_THRESH = 0.6
 
+# Duration for continuous time not seeing a bike before moving again
 BIKE_STOP_TIME = 5
+
+# Minimum number of observations of an animal to consider it valid
+ANIMAL_MIN_OBSERVATIONS = 3
 
 # state machine modes, not all implemented
 class Mode(Enum):
@@ -252,6 +256,12 @@ class Supervisor:
         print('init plan rescue')
         self.tsales_circuit_received = 0
         self.lock_animal_waypoints = 1
+
+        print(self.animal_waypoints.poses)
+        print(self.animal_waypoints.observations_count)
+        self.animal_waypoints.cull(ANIMAL_MIN_OBSERVATIONS)
+        print(self.animal_waypoints.poses)
+        print(self.animal_waypoints.observations_count)
 
         if self.animal_waypoints.poses.shape[0] > 0:
             tsales_request = TSalesRequest()
