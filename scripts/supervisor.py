@@ -236,7 +236,7 @@ class Supervisor:
             dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
         return (self.mode == Mode.CROSS and all(dist > CROSS_MIN_DIST for dist in dist2stop)) # (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
 
-    def init_go_to_animal(self):
+    def pop_animal(self):
         # remove the animal from the rescue queue
         waypoint, animal_type = self.animal_waypoints.pop()
         print waypoint, animal_type
@@ -364,10 +364,10 @@ class Supervisor:
 
 
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                if self.modeafterstop == Mode.Nav:
+                if self.modeafterstop == Mode.NAV:
                     self.mode = Mode.IDLE
                 elif self.modeafterstop == Mode.GO_TO_ANIMAL:
-                    self.mode = Mode.PLAN_RESCUE
+                    self.mode = Mode.RESCUE_ANIMAL
             
 
             if self.honk:
@@ -406,6 +406,7 @@ class Supervisor:
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
+                    self.pop_animal()
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.IDLE
@@ -413,12 +414,6 @@ class Supervisor:
         elif self.mode == Mode.GO_TO_ANIMAL:
             # navigate to the animal
 
-            if not self.init_flag:
-                self.init_flag = 1
-                if self.animal_waypoints.length() == 0:
-                    self.mode = Mode.VICTORY
-
-                self.init_go_to_animal()
 
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
@@ -441,6 +436,7 @@ class Supervisor:
             if self.has_rescued():
                 rospy.loginfo("Rescued a: %s", self.target_animal)
                 if self.animal_waypoints.length() > 0:
+                    self.pop_animal()
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.VICTORY
