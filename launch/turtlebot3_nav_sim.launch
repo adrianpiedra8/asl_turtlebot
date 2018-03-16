@@ -55,6 +55,14 @@
     <param name="lasamplestep" value="0.005"/>
   </node>
 
+  <!-- AMCL -->
+  <include file="$(find asl_turtlebot)/launch/amcl.launch.xml"/>
+
+  <!-- Map server -->
+  <arg name="map_file" default="$(find asl_turtlebot)/slam_map_sim.yaml"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+  </node>
+
   <node pkg="asl_turtlebot" type="supervisor.py" name="turtlebot_supervisor" output="screen"/>
   <node pkg="asl_turtlebot" type="pose_controller.py" name="turtlebot_pose_controller" />
   <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" />
