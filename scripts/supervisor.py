@@ -89,6 +89,9 @@ class Supervisor:
 
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
+        #flag to keep sound from repeating
+        self.play_rescue_sound = True
+        self.victory_sound = True
 
         # flag that determines if the robot has found a bicycle and should honk
         #self.bicycles = []
@@ -401,6 +404,11 @@ class Supervisor:
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
 
+            if(self.play_rescue_sound):
+                "plY SONG"
+                self.soundhandle.playWave('/home/aa274/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
+                self.play_rescue_sound = False;
+
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
@@ -441,6 +449,11 @@ class Supervisor:
 
         elif self.mode == Mode.VICTORY:
             # self.stay_idle()
+
+            if(self.victory_sound):
+                self.soundhandle.playWave('/home/aa274/catkin_ws/src/asl_turtlebot/victory.wav', 1.0)
+                self.victory_sound = False
+
             twist = Twist()
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
             twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 10.0
