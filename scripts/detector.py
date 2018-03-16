@@ -253,7 +253,7 @@ class Detector:
 
         delta_theta = np.arctan2(x_hat_C, z_hat_C)
         # Goal theta = Current theta + delta theta
-        theta_g = pose_w2b_W[2] + delta_theta
+        theta_g = pose_w2b_W[2] - delta_theta
 
         return pos_W.reshape(2,), theta_g
 
