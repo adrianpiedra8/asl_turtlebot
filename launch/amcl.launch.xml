@@ -45,7 +45,7 @@
 
     <param name="tf_broadcast"              value="False"/>
 
-    <param name="use_map_topic"             value="True"/>
+    <!-- <param name="use_map_topic"             value="True"/> -->
 
   </node>
 </launch>
