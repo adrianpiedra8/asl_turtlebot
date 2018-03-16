@@ -78,7 +78,7 @@ class StopSigns:
             self.locations = np.vstack((self.locations, observation))
             self.observations_count = np.append(self.observations_count, 1)
             index = self.locations.shape[0] - 1
-            rospy.loginfo("Adding new stop sign. Index %f is now [%f, %f]",
+            rospy.loginfo("Adding new stop sign. Index %d is now [%f, %f]",
                   index, self.locations[index, 0], self.locations[index, 1])
 
     def update_location(self, index, observation):
@@ -102,6 +102,28 @@ class AnimalWaypoints:
         self.bbox_heights = np.zeros((0))
         self.observations_count = np.zeros((0))
         self.animal_types = []
+
+
+    def cull(self, min_observations):
+        new_poses = np.zeros((0, 3))
+        new_locations = np.zeros((0,2))
+        new_bbox_heights = np.zeros((0))
+        new_observations_count = np.zeros((0))
+        new_animal_types = []
+
+        for i in range(self.length()):
+            if self.observations_count[i] >= min_observations:
+                new_locations = np.vstack((new_locations, self.locations[i,:]))
+                new_poses = np.vstack((new_poses, self.poses[i,:]))
+                new_bbox_heights = np.append(new_bbox_heights, self.bbox_heights[i])
+                new_observations_count = np.append(new_observations_count, self.observations_count[i])
+                new_animal_types.append(self.animal_types[i])
+
+        self.poses = new_poses
+        self.locations = new_locations
+        self.bbox_heights = new_bbox_heights
+        self.observations_count = new_observations_count
+        self.animal_types = new_animal_types
 
     def reorder(self, index):
         print("Reordering waypoints to {}".format(index))
@@ -139,7 +161,7 @@ class AnimalWaypoints:
             self.animal_types.append(animal_type)
 
             index = self.locations.shape[0] - 1
-            rospy.loginfo("Adding new animal waypoint. Index: %f, location: [%f, %f], pose: [%f, %f, %f], bbox_height: %f, animal type: %s",
+            rospy.loginfo("Adding new animal waypoint. Index: %d, location: [%f, %f], pose: [%f, %f, %f], bbox_height: %f, animal type: %s",
                   index, self.locations[index, 0], self.locations[index, 1], 
                   self.poses[index, 0], self.poses[index, 1], self.poses[index, 2], 
                   self.bbox_heights[index], self.animal_types[index])
@@ -154,8 +176,8 @@ class AnimalWaypoints:
         # Increment observations count
         self.observations_count[index] = n + 1
 
-        # rospy.loginfo("Incorporating animal waypoint observation. Index %f incorporated [%f, %f] and is now [%f, %f]",
-                      # index, observation[0], observation[1], self.locations[index, 0], self.locations[index, 1])
+        rospy.loginfo("Incorporating animal waypoint observation. Index %d now has %d observations",
+                      index, self.observations_count[index])
 
         # Only update pose if new observation has a bigger bounding box
         if bbox_height > self.bbox_heights[index]:
