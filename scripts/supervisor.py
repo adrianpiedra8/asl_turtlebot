@@ -360,6 +360,14 @@ class Supervisor:
             else:
                 self.nav_to_pose()
 
+
+            if self.close_to(self.x_g,self.y_g,self.theta_g):
+                if self.modeafterstop == Mode.Nav:
+                    self.mode = Mode.IDLE
+                elif self.modeafterstop == Mode.GO_TO_ANIMAL:
+                    self.mode = Mode.PLAN_RESCUE
+            
+
             if self.honk:
                 self.mode = Mode.BIKE_STOP
                 self.modeafterhonk = Mode.CROSS
@@ -439,7 +447,7 @@ class Supervisor:
             # self.stay_idle()
             twist = Twist()
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0.1
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 10.0
             self.cmd_vel_publisher.publish(twist)
 
         else:
