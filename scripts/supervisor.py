@@ -180,12 +180,14 @@ class Supervisor:
 
             # only add animals in the exploration states
             if not self.lock_animal_waypoints:
-                self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
+                self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type, msg.location_W[3])
                 # Stop Bacon in its tracks
                 self.x_g = self.x
                 self.y_g = self.y
+        
                 # Set the attitude to "center" detected box in image frame
-                self.theta_g = msg.location_W[3]
+                self.theta_g = self.animal_waypoints.animal_theta_g
+
                 # Once this pose is achieved, Bacon will go into IDLE mode while accumulating detections
                 # of the centered target (hopefully this allows us to cull spurious detections)
 

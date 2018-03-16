@@ -102,6 +102,7 @@ class AnimalWaypoints:
         self.bbox_heights = np.zeros((0))
         self.observations_count = np.zeros((0))
         self.animal_types = []
+        self.animal_theta_g = []
 
 
     def cull(self, min_observations):
@@ -149,7 +150,7 @@ class AnimalWaypoints:
                   self.animal_types[i]))
         print("")
 
-    def add_observation(self, observation, pose, bbox_height, animal_type):
+    def add_observation(self, observation, pose, bbox_height, animal_type, theta_goal):
         existing = findmatch(self.locations, observation, self.dist_thresh)
         if existing != None:
             self.update_location(existing, observation, pose, bbox_height)
@@ -159,6 +160,7 @@ class AnimalWaypoints:
             self.bbox_heights = np.append(self.bbox_heights, bbox_height)
             self.observations_count = np.append(self.observations_count, 1)
             self.animal_types.append(animal_type)
+            self.animal_theta_g.append(theta_goal)
 
             index = self.locations.shape[0] - 1
             rospy.loginfo("Adding new animal waypoint. Index: %d, location: [%f, %f], pose: [%f, %f, %f], bbox_height: %f, animal type: %s",
