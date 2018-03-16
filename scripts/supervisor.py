@@ -89,6 +89,9 @@ class Supervisor:
 
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
+        #flag to keep sound from repeating
+        self.play_rescue_sound = True
+        self.victory_sound = True
 
         # flag that determines if the robot has found a bicycle and should honk
         #self.bicycles = []
@@ -177,12 +180,14 @@ class Supervisor:
 
             # only add animals in the exploration states
             if not self.lock_animal_waypoints:
-                self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type)
+                idx = self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type, msg.location_W[3])
                 # Stop Bacon in its tracks
                 self.x_g = self.x
                 self.y_g = self.y
+        
                 # Set the attitude to "center" detected box in image frame
-                self.theta_g = msg.location_W[3]
+                self.theta_g = self.animal_waypoints.animal_theta_g[idx]
+
                 # Once this pose is achieved, Bacon will go into IDLE mode while accumulating detections
                 # of the centered target (hopefully this allows us to cull spurious detections)
 
@@ -234,7 +239,7 @@ class Supervisor:
             dist2stop.append(np.linalg.norm(current_pose - self.stop_signs.locations[i,:])) # Creates list of distances to all stop signs
         return (self.mode == Mode.CROSS and all(dist > CROSS_MIN_DIST for dist in dist2stop)) # (rospy.get_rostime()-self.cross_start)>rospy.Duration.from_sec(CROSSING_TIME))
 
-    def init_go_to_animal(self):
+    def pop_animal(self):
         # remove the animal from the rescue queue
         waypoint, animal_type = self.animal_waypoints.pop()
         print waypoint, animal_type
@@ -360,6 +365,14 @@ class Supervisor:
             else:
                 self.nav_to_pose()
 
+
+            if self.close_to(self.x_g,self.y_g,self.theta_g):
+                if self.modeafterstop == Mode.NAV:
+                    self.mode = Mode.IDLE
+                elif self.modeafterstop == Mode.GO_TO_ANIMAL:
+                    self.mode = Mode.RESCUE_ANIMAL
+            
+
             if self.honk:
                 self.mode = Mode.BIKE_STOP
                 self.modeafterhonk = Mode.CROSS
@@ -393,9 +406,15 @@ class Supervisor:
             rescue_ready_msg = True
             self.rescue_ready_publisher.publish(rescue_ready_msg)
 
+            if(self.play_rescue_sound):
+                "plY SONG"
+                self.soundhandle.playWave('/home/aa274/catkin_ws/src/asl_turtlebot/finalcount.wav', 1.0)
+                self.play_rescue_sound = False;
+
             # when rescue on message is received, tranisition to rescue
             if self.rescue_on:
                 if self.animal_waypoints.length() > 0:
+                    self.pop_animal()
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.IDLE
@@ -403,12 +422,6 @@ class Supervisor:
         elif self.mode == Mode.GO_TO_ANIMAL:
             # navigate to the animal
 
-            if not self.init_flag:
-                self.init_flag = 1
-                if self.animal_waypoints.length() == 0:
-                    self.mode = Mode.VICTORY
-
-                self.init_go_to_animal()
 
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
@@ -431,15 +444,21 @@ class Supervisor:
             if self.has_rescued():
                 rospy.loginfo("Rescued a: %s", self.target_animal)
                 if self.animal_waypoints.length() > 0:
+                    self.pop_animal()
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.VICTORY
 
         elif self.mode == Mode.VICTORY:
             # self.stay_idle()
+
+            if(self.victory_sound):
+                self.soundhandle.playWave('/home/aa274/catkin_ws/src/asl_turtlebot/victory.wav', 1.0)
+                self.victory_sound = False
+
             twist = Twist()
             twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
-            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0.1
+            twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 10.0
             self.cmd_vel_publisher.publish(twist)
 
         else:
