@@ -18,9 +18,9 @@
     <param name="initial_pose_x"            value="$(arg initial_pose_x)"/>
     <param name="initial_pose_y"            value="$(arg initial_pose_y)"/>
     <param name="initial_pose_a"            value="$(arg initial_pose_a)"/>
-    <!-- <param name="initial_cov_xx"            value="1e8"/>
+    <param name="initial_cov_xx"            value="1e8"/>
     <param name="initial_cov_yy"            value="1e8"/>
-    <param name="initial_cov_aa"            value="1e6"/> -->
+    <param name="initial_cov_aa"            value="1e6"/>
     <param name="gui_publish_rate"          value="50.0"/>
 
     <remap from="scan"                      to="$(arg scan_topic)"/>
@@ -44,6 +44,8 @@
     <param name="base_frame_id"             value="base_footprint"/>
 
     <param name="tf_broadcast"              value="False"/>
+
+    <param name="use_map_topic"             value="True"/>
 
   </node>
 </launch>

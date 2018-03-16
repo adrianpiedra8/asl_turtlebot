@@ -35,10 +35,10 @@
   </node>
 
   <!-- AMCL -->
-  <!-- <include file="$(find asl_turtlebot)/launch/amcl.launch.xml"/> -->
+  <include file="$(find asl_turtlebot)/launch/amcl.launch.xml"/>
 
   <!-- Map server -->
-  <!-- <arg name="map_file" default="$(find asl_turtlebot)/slam_map_sim.yaml"/>
+  <!-- <arg name="map_file" default="$(find asl_turtlebot)/slam_map.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
   </node> -->
 
