@@ -57,6 +57,9 @@
 
   <!-- AMCL -->
   <include file="$(find asl_turtlebot)/launch/amcl.launch.xml"/>
+  
+  <!-- Frontier Exploration -->
+  <include file="$(find asl_turtlebot)/launch/frontier_exploration_slam_map.launch"/>
 
   <!-- Map server -->
   <arg name="map_file" default="$(find asl_turtlebot)/slam_map_sim.yaml"/>
