@@ -7,6 +7,7 @@
         <arg name="camera_fps" value="$(arg camera_fps)" />
     </include>
     <node pkg="asl_turtlebot" type="tb3_image_rotate_and_crop.py" name="image_rotater" />
+    <node pkg="tf" type="static_transform_publisher" name="my_frame_broadcaster" args="0.343 0.375 0 0 0 -0.476 0.879 map my_frame 100"/>
     <node pkg="tf" type="static_transform_publisher" name="camera_true_broadcaster" args="0.03 0 0.067 0.707107 0 0.707107 0 base_footprint raspicam 100" />
     <node pkg="tf" type="static_transform_publisher" name="camera_broadcaster" args="0 0 0 0 0 0.707107 0.707107 raspicam camera 100" />
     <node pkg="tf" type="static_transform_publisher" name="velodyne_broadcaster" args="-0.04 0 0.19 0 0 0 1 base_footprint velodyne 100" />

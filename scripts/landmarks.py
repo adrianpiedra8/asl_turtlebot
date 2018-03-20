@@ -202,3 +202,21 @@ class AnimalWaypoints:
             return waypoint, animal_type
         else:
             return None, None
+
+class ExploreWaypoints:
+    def __init__(self):
+        self.poses = np.zeros((0, 3))
+ 
+    def length(self):
+        return self.poses.shape[0]
+        
+    def add_exploration_waypoint(self, pose):
+        self.poses = np.vstack((self.poses, pose))
+
+    def pop(self):
+        if self.length() > 0:
+            waypoint = self.poses[0,:]
+            self.poses = np.delete(self.poses, 0, axis=0)
+            return waypoint
+        else:
+            return None
