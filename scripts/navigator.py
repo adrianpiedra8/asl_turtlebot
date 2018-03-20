@@ -103,8 +103,6 @@ class Navigator:
         rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta = euler[2]
-        
-        self.occupancy_updated = True
 
     def tsales_callback(self, msg):
         print('Solving Traveling Salesman...')
@@ -188,6 +186,7 @@ class Navigator:
         # makes sure we have a map
         if not self.occupancy:
             print('no occupancy')
+            rospy.loginfo('no occupancy')
             self.current_plan = []
             return
 
