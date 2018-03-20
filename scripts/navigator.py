@@ -103,6 +103,8 @@ class Navigator:
         rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta = euler[2]
+        
+        self.occupancy_updated = True
 
     def tsales_callback(self, msg):
         print('Solving Traveling Salesman...')
@@ -167,23 +169,20 @@ class Navigator:
     def run_navigator(self):
         """ computes a path from current state to goal state using A* and sends it to the path controller """
 
-        # below is unnecessary when starting with an initial pose using amcl
         # makes sure we have a location
-        # try:
-        #     (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-        #     self.x = translation[0]
-        #     self.y = translation[1]
-        #     euler = tf.transformations.euler_from_quaternion(rotation)
-        #     self.theta = euler[2]
-        # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-        #     self.current_plan = []
-        #     return
-
-        print self.x, self.y, self.theta
-        print self.x_g, self.y_g, self.theta_g
+        try:
+            (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+            self.x = translation[0]
+            self.y = translation[1]
+            euler = tf.transformations.euler_from_quaternion(rotation)
+            self.theta = euler[2]
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            self.current_plan = []
+            return
 
         # makes sure we have a map
         if not self.occupancy:
+            print('no occupancy')
             self.current_plan = []
             return
 
