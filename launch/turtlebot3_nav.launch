@@ -32,6 +32,7 @@
     <param name="llsamplestep" value="0.01"/>
     <param name="lasamplerange" value="0.005"/>
     <param name="lasamplestep" value="0.005"/>
+    <remap from="/map" to="/gmapping_map"/>
   </node>
 
   <!-- AMCL -->
@@ -42,10 +43,10 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
   </node>
 
-  <node pkg="asl_turtlebot" type="supervisor.py" name="turtlebot_supervisor" output="screen"/>
-  <node pkg="asl_turtlebot" type="pose_controller.py" name="turtlebot_pose_controller" />
-  <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" />
-  <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" />
+  <!-- <node pkg="asl_turtlebot" type="supervisor.py" name="turtlebot_supervisor" output="screen"/> -->
+  <!-- <node pkg="asl_turtlebot" type="pose_controller.py" name="turtlebot_pose_controller" /> -->
+  <!-- <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" /> -->
+  <!-- <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" /> -->
 
-  <node pkg="sound_play" type="soundplay_node.py" name="sound_player" />
+  <!-- <node pkg="sound_play" type="soundplay_node.py" name="sound_player" /> -->
 </launch>

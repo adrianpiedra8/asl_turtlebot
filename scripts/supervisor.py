@@ -3,7 +3,7 @@
 import rospy
 from gazebo_msgs.msg import ModelStates
 from std_msgs.msg import Float32MultiArray, String, Bool, Int8
-from geometry_msgs.msg import Twist, PoseArray, Pose2D, PoseStamped
+from geometry_msgs.msg import Twist, PoseArray, Pose2D, PoseStamped, PoseWithCovarianceStamped
 from asl_turtlebot.msg import DetectedObject, TSalesRequest, TSalesCircuit
 import landmarks
 import tf
@@ -59,8 +59,10 @@ class Mode(Enum):
     REQUEST_RESCUE = 5
     GO_TO_ANIMAL = 6
     RESCUE_ANIMAL = 7
-    BIKE_STOP = 8
+    EXPLORE = 8
     VICTORY = 9
+    BIKE_STOP = 10
+    GO_TO_EXPLORE_WAYPOINT = 11
 
 class Supervisor:
     """ the state machine of the turtlebot """
@@ -86,6 +88,7 @@ class Supervisor:
         # Landmark lists
         self.stop_signs = landmarks.StopSigns(dist_thresh=STOP_SIGN_DIST_THRESH) # List of coordinates for all stop signs
         self.animal_waypoints = landmarks.AnimalWaypoints(dist_thresh=ANIMAL_DIST_THRESH)
+        self.explore_waypoints = landmarks.ExploreWaypoints()
 
         # flag that determines if the rescue can be initiated
         self.rescue_on = False
@@ -104,6 +107,12 @@ class Supervisor:
         # status flag for traveling salesman circuit received
         self.tsales_circuit_received = 1
 
+        # status flag for amcl init received
+        self.amcl_init_received = False
+
+        # status flag for whether exploration has started
+        self.explore_started = False
+
         # lock waypoints
         self.lock_animal_waypoints = 0
 
@@ -120,20 +129,21 @@ class Supervisor:
 
         rospy.Subscriber('/detector/stop_sign', DetectedObject, self.stop_sign_detected_callback)
         rospy.Subscriber('/move_base_simple/goal', PoseStamped, self.rviz_goal_callback)
-        rospy.Subscriber('/detector/bird', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/bird', DetectedObject, self.animal_detected_callback)
         rospy.Subscriber('/detector/cat', DetectedObject, self.animal_detected_callback)
         rospy.Subscriber('/detector/dog', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/horse', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/sheep', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/cow', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/elephant', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/bear', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/zebra', DetectedObject, self.animal_detected_callback)
-        rospy.Subscriber('/detector/giraffe', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/horse', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/sheep', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/cow', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/elephant', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/bear', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/zebra', DetectedObject, self.animal_detected_callback)
+        # rospy.Subscriber('/detector/giraffe', DetectedObject, self.animal_detected_callback)
         rospy.Subscriber('/detector/bicycle', DetectedObject, self.bicycle_detected_callback)
         rospy.Subscriber('/rescue_on', Bool, self.rescue_on_callback)
         rospy.Subscriber('/cmd_state', Int8, self.cmd_state_callback)
         rospy.Subscriber('/tsales_circuit', TSalesCircuit, self.tsales_circuit_callback)
+        rospy.Subscriber('/initialpose', PoseWithCovarianceStamped, self.amcl_init_callback)
 
         self.trans_listener = tf.TransformListener()
 
@@ -202,7 +212,6 @@ class Supervisor:
 
     def nav_to_pose(self):
         """ sends the current desired pose to the navigator """
-
         nav_g_msg = Pose2D()
         nav_g_msg.x = self.x_g
         nav_g_msg.y = self.y_g
@@ -300,6 +309,44 @@ class Supervisor:
 
         self.tsales_circuit_received = 1
 
+    def amcl_init_callback(self, msg):
+        print('amcl init callback')
+        # update pose
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        self.theta = euler[2]
+
+        self.amcl_init_received = True
+
+    def init_explore(self):
+        print('init explore')
+        self.explore_started = True
+
+        exploration_target_waypoints = np.array([
+            # [1.0, 0.3, np.pi],
+            # [1.0, 2.7, 0.0],
+            # [1.0, 1.5, np.pi/2]
+            [0.3, 2.0, np.pi/2],
+            [1.0, 3.2, 0.0]
+            ])
+
+        for i in range(len(exploration_target_waypoints)):
+            self.explore_waypoints.add_exploration_waypoint(exploration_target_waypoints[i, :])
+
+    def pop_explore_waypoint(self):
+        # remove the exploration waypoint from the exploration queue
+        waypoint = self.explore_waypoints.pop()
+        print waypoint
+
+        if np.any(waypoint == None):
+            pass
+        else:
+            self.x_g = waypoint[0]
+            self.y_g = waypoint[1]
+            self.theta_g = waypoint[2]
+
     def loop(self):
         """ the main loop of the robot. At each iteration, depending on its
         mode (i.e. the finite state machine's state), if takes appropriate
@@ -326,8 +373,13 @@ class Supervisor:
 
         # checks wich mode it is in and acts accordingly
         if self.mode == Mode.IDLE:
-            # send zero velocity
-            self.stay_idle()
+            if self.amcl_init_received == True:
+                self.amcl_init_received = False
+                self.mode = Mode.EXPLORE
+
+            else:
+                # send zero velocity
+                self.stay_idle()
 
         elif self.mode == Mode.BIKE_STOP:
             if self.honk:
@@ -365,13 +417,11 @@ class Supervisor:
             else:
                 self.nav_to_pose()
 
-
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 if self.modeafterstop == Mode.NAV:
                     self.mode = Mode.IDLE
                 elif self.modeafterstop == Mode.GO_TO_ANIMAL:
                     self.mode = Mode.RESCUE_ANIMAL
-            
 
             if self.honk:
                 self.mode = Mode.BIKE_STOP
@@ -421,8 +471,6 @@ class Supervisor:
 
         elif self.mode == Mode.GO_TO_ANIMAL:
             # navigate to the animal
-
-
             if self.close_to(self.x_g,self.y_g,self.theta_g):
                 self.mode = Mode.RESCUE_ANIMAL
             else:
@@ -448,6 +496,33 @@ class Supervisor:
                     self.mode = Mode.GO_TO_ANIMAL
                 else:
                     self.mode = Mode.VICTORY
+
+        elif self.mode == Mode.EXPLORE:
+            if self.explore_started == False:
+                self.init_explore()
+            
+            if self.explore_waypoints.length() > 0:
+                self.pop_explore_waypoint()
+                self.mode = Mode.GO_TO_EXPLORE_WAYPOINT
+
+            else:
+                self.mode = Mode.PLAN_RESCUE
+
+        elif self.mode == Mode.GO_TO_EXPLORE_WAYPOINT:
+            # navigate to the exploration waypoint
+            if self.close_to(self.x_g,self.y_g,self.theta_g):
+                self.mode = Mode.EXPLORE
+            else:
+                if self.stop_check(): # Returns True if within STOP_MIN_DIST
+                    self.mode = Mode.STOP
+                    self.modeafterstop = Mode.GO_TO_EXPLORE_WAYPOINT
+                else:
+                    # print self.x_g, self.y_g, self.theta_g
+                    self.nav_to_pose()
+
+            if self.honk:
+                self.mode = Mode.BIKE_STOP
+                self.modeafterhonk = Mode.GO_TO_EXPLORE_WAYPOINT
 
         elif self.mode == Mode.VICTORY:
             # self.stay_idle()

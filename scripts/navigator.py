@@ -3,7 +3,7 @@
 import rospy
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Path
 from gazebo_msgs.msg import ModelStates
-from geometry_msgs.msg import Twist, PoseArray, Pose2D, PoseStamped
+from geometry_msgs.msg import Twist, PoseArray, Pose2D, PoseStamped, PoseWithCovarianceStamped
 from std_msgs.msg import Float32MultiArray, String
 import tf
 import numpy as np
@@ -94,6 +94,15 @@ class Navigator:
         rospy.Subscriber('/map_metadata', MapMetaData, self.map_md_callback)
         rospy.Subscriber('/cmd_nav', Pose2D, self.cmd_nav_callback)
         rospy.Subscriber('/tsales_request', TSalesRequest, self.tsales_callback)
+        rospy.Subscriber('/amcl_pose', PoseWithCovarianceStamped, self.amcl_callback)
+
+    def amcl_callback(self, msg):
+        # update pose
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
+        euler = tf.transformations.euler_from_quaternion(rotation)
+        self.theta = euler[2]
 
     def tsales_callback(self, msg):
         print('Solving Traveling Salesman...')
@@ -158,16 +167,20 @@ class Navigator:
     def run_navigator(self):
         """ computes a path from current state to goal state using A* and sends it to the path controller """
 
+        # below is unnecessary when starting with an initial pose using amcl
         # makes sure we have a location
-        try:
-            (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
-            self.x = translation[0]
-            self.y = translation[1]
-            euler = tf.transformations.euler_from_quaternion(rotation)
-            self.theta = euler[2]
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            self.current_plan = []
-            return
+        # try:
+        #     (translation,rotation) = self.trans_listener.lookupTransform('/map', '/base_footprint', rospy.Time(0))
+        #     self.x = translation[0]
+        #     self.y = translation[1]
+        #     euler = tf.transformations.euler_from_quaternion(rotation)
+        #     self.theta = euler[2]
+        # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        #     self.current_plan = []
+        #     return
+
+        print self.x, self.y, self.theta
+        print self.x_g, self.y_g, self.theta_g
 
         # makes sure we have a map
         if not self.occupancy:
