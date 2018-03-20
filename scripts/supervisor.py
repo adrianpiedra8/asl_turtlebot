@@ -135,7 +135,7 @@ class Supervisor:
         # rospy.Subscriber('/detector/horse', DetectedObject, self.animal_detected_callback)
         # rospy.Subscriber('/detector/sheep', DetectedObject, self.animal_detected_callback)
         # rospy.Subscriber('/detector/cow', DetectedObject, self.animal_detected_callback)
-        # rospy.Subscriber('/detector/elephant', DetectedObject, self.animal_detected_callback)
+        rospy.Subscriber('/detector/elephant', DetectedObject, self.animal_detected_callback)
         # rospy.Subscriber('/detector/bear', DetectedObject, self.animal_detected_callback)
         # rospy.Subscriber('/detector/zebra', DetectedObject, self.animal_detected_callback)
         # rospy.Subscriber('/detector/giraffe', DetectedObject, self.animal_detected_callback)
@@ -324,13 +324,22 @@ class Supervisor:
         print('init explore')
         self.explore_started = True
 
+        # use the following for real robot
         exploration_target_waypoints = np.array([
-            # [1.0, 0.3, np.pi],
-            # [1.0, 2.7, 0.0],
-            # [1.0, 1.5, np.pi/2]
-            [0.3, 2.0, np.pi/2],
-            [1.0, 3.2, 0.0]
+            [0.4, 0.3, np.pi/2],
+            [1.4, 2.7, np.pi/2],
+            [2.7, 1.0, 3*np.pi/2],
+            [1.5, 0.5, np.pi/2]
             ])
+
+        # use the following for simulation
+        # exploration_target_waypoints = np.array([
+        #     [3.4, 2.8, np.pi/2],
+        #     [2.5, 1.5, np.pi],
+        #     [0.5, 1.6, np.pi],
+        #     [0.3, 0.3, 0],
+        #     [3.3, 0.3, np.pi/2]
+        #     ])
 
         for i in range(len(exploration_target_waypoints)):
             self.explore_waypoints.add_exploration_waypoint(exploration_target_waypoints[i, :])

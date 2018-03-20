@@ -136,12 +136,15 @@ class Navigator:
         self.run_navigator()
 
     def map_md_callback(self, msg):
+        print msg
         self.map_width = msg.width
         self.map_height = msg.height
         self.map_resolution = msg.resolution
         self.map_origin = (msg.origin.position.x,msg.origin.position.y)
 
     def map_callback(self,msg):
+        print 'map callback'
+        print msg.data
         self.map_probs = msg.data
         if self.map_width>0 and self.map_height>0 and len(self.map_probs)>0:
             self.occupancy = StochOccupancyGrid2D(self.map_resolution,
@@ -152,6 +155,8 @@ class Navigator:
                                                   8,
                                                   self.map_probs)
             self.occupancy_updated = True
+            print 'updated occupancy'
+        print self.occupancy
 
     def close_to_end_location(self):
         return (abs(self.x-self.x_g)<END_POS_THRESH and abs(self.y-self.y_g)<END_POS_THRESH)
@@ -200,7 +205,8 @@ class Navigator:
 
         # if there is no plan, we are far from the start of the plan,
         # or the occupancy grid has been updated, update the current plan
-        if len(self.current_plan)==0 or not(self.close_to_start_location()) or self.occupancy_updated:
+        # if len(self.current_plan)==0 or not(self.close_to_start_location()) or self.occupancy_updated:
+        if self.occupancy_updated:
 
             # use A* to compute new plan
             state_min = self.snap_to_grid((-self.plan_horizon, -self.plan_horizon))

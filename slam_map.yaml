@@ -1,4 +1,4 @@
-image: slam_map.pgm
+image: slam_map1.pgm
 resolution: 0.050000
 origin: [14.298, 3.066, 2.565]
 # origin: [-10,0, -10.0, 0.0]
