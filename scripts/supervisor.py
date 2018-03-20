@@ -49,6 +49,12 @@ BIKE_STOP_TIME = 5
 # Minimum number of observations of an animal to consider it valid
 ANIMAL_MIN_OBSERVATIONS = 3
 
+# Nominal number of observations of an animal before moving on from pinpointing
+ANIMAL_NOM_OBSERVATIONS = 3
+
+# Maximum amount of time to allow between first detection and moving on to previous goal pose during poinpointing
+MAX_PINPOINT_TIME = 5.0
+
 # state machine modes, not all implemented
 class Mode(Enum):
     IDLE = 0
@@ -81,6 +87,7 @@ class Supervisor:
         self.x_g = 0
         self.y_g = 0
         self.theta_g = 0
+        self.pose_goal_backlog = []
 
         # init flag used for running init function for each state
         self.init_flag = 0
@@ -191,15 +198,37 @@ class Supervisor:
             # only add animals in the exploration states
             if not self.lock_animal_waypoints:
                 idx = self.animal_waypoints.add_observation(observation, pose, bbox_height, animal_type, msg.location_W[3])
-                # Stop Bacon in its tracks
-                self.x_g = self.x
-                self.y_g = self.y
-        
-                # Set the attitude to "center" detected box in image frame
-                self.theta_g = self.animal_waypoints.animal_theta_g[idx]
 
-                # Once this pose is achieved, Bacon will go into IDLE mode while accumulating detections
-                # of the centered target (hopefully this allows us to cull spurious detections)
+                
+                # Finds number of observations of this existing detection
+                n = self.animal_waypoints.observations_count[idx] 
+                # If first detection, stop bacon and pinpoint
+                if n == 1:
+                    # Save prior goal pose
+                    self.pose_goal_backlog = [self.x_g, self.y_g, self.theta_g]
+
+                    # Stop Bacon in its tracks and pinpoint
+                    self.x_g = self.x
+                    self.y_g = self.y
+            
+                    # Set the attitude to "center" detected box in image frame
+                    self.theta_g = self.animal_waypoints.animal_theta_g[idx]
+                    t_first = rospy.get_rostime().to_sec()
+                    self.animal_waypoints.first_detection(idx, t_first)
+                    
+                # Once the nominal number of animal measurements is achieved, reset to prior goal pose
+                elif n > ANIMAL_NOM_OBSERVATIONS:
+                    self.x_g = self.pose_goal_backlog[0]
+                    self.y_g = self.pose_goal_backlog[1]
+                    self.theta_g = self.pose_goal_backlog[2]
+
+                # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
+                # wait a fixed amount of time before moving on to prior goal pose
+                elif rospy.get_rostime().to_sec() > self.animal_waypoints.time_first_detection[idx] + MAX_PINPOINT_TIME:
+                    self.x_g = self.pose_goal_backlog[0]
+                    self.y_g = self.pose_goal_backlog[1]
+                    self.theta_g = self.pose_goal_backlog[2]
+
 
     def bicycle_detected_callback(self, msg):
     	"""callback for when the detector has found a bicycle"""

@@ -103,6 +103,7 @@ class AnimalWaypoints:
         self.observations_count = np.zeros((0))
         self.animal_types = []
         self.animal_theta_g = []
+        self.time_first_detection = np.zeros((0))
 
 
     def cull(self, min_observations):
@@ -154,6 +155,7 @@ class AnimalWaypoints:
         existing = findmatch(self.locations, observation, self.dist_thresh)
         if existing != None:
             self.update_location(existing, observation, pose, bbox_height)
+
             return existing
         else:
             self.locations = np.vstack((self.locations, observation))
@@ -168,7 +170,11 @@ class AnimalWaypoints:
                   index, self.locations[index, 0], self.locations[index, 1], 
                   self.poses[index, 0], self.poses[index, 1], self.poses[index, 2], 
                   self.bbox_heights[index], self.animal_types[index])
+            
             return index
+
+    def first_detection(self, index, t_first):
+        self.time_first_detection[index] = t_first
 
     def update_location(self, index, observation, pose, bbox_height):
         prev = self.locations[index]
