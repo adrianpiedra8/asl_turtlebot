@@ -414,19 +414,19 @@ class Supervisor:
 
         # use the following for real robot
         exploration_target_waypoints = np.array([
-            [10.312, 9.789, -0.962],
-            [10.007, 8.993, -2.535],
-            [10.232, 7.697, -0.959],
-            [9.862, 6.676, -2.880],
-            [8.724, 7.894, 2.169],
-            [9.524, 8.270, 0.608],
-            [10.752, 7.378, -0.966],
-            [11.781, 7.373, 1.694],
-            [11.139, 8.821, 2.178],
-            [9.952, 8.929, -2.551],
-            [8.875, 8.163, -2.567],
-            [8.399, 8.897, 0.586],
-            [9.183, 9.508, -0.980]
+            [10.447, 7.391, -0.996], # exit parking lot
+            [10.007, 8.993, -2.535], # first stop sign on right
+            [10.505, 7.226, -0.948], # end of one-way on right side
+            [9.862, 6.676, -2.880], # look towards curved forest
+            [8.724, 7.894, 2.169], # move down next to main intersection
+            [9.488, 8.250, 0.254], # move next to angled stop sign
+            [10.752, 7.378, -0.966], # end of one-way on left side
+            [11.480, 7.162, 0.572], # natural turn left from one-way to side street
+            [11.139, 8.821, 2.178], # move down next to main intersection
+            [10.007, 8.993, -2.535], # back to stop sign on right
+            [8.875, 8.163, -2.567], # move across main intersection
+            [8.399, 8.897, 0.586], # move towards parking lot
+            [9.183, 9.508, -0.980] # park
 
             # Position(10.447, 7.391, 0.000), Orientation(0.000, 0.000, -0.478, 0.879) = Angle: -0.996
             # [9.798, 8.728, -2.544],
