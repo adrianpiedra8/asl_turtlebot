@@ -114,11 +114,11 @@ class AStar(object):
     # Plots the path found in self.path and the obstacles
     # INPUT: None
     # OUTPUT: None
-    def plot_path(self, fig, name1, name2, pcolor='green'):
+    def plot_path(self, fig=0, name1='', name2='', pcolor='green'):
         if not self.path:
             return
 
-        self.occupancy.plot(fig.number)
+        self.occupancy.plot(fig)
 
         solution_path = np.array(self.path) * self.resolution
         plt.plot(solution_path[:,0],solution_path[:,1], color=pcolor, linewidth=2, label="solution path", zorder=10)
@@ -242,3 +242,4 @@ class DetOccupancyGrid2D(object):
 #     exit(0)
 
 # astar.plot_path()
+# plt.show()
