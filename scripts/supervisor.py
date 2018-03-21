@@ -53,7 +53,7 @@ ANIMAL_MIN_OBSERVATIONS = 3
 ANIMAL_NOM_OBSERVATIONS = 3
 
 # Maximum amount of time to allow between first detection and moving on to previous goal pose during poinpointing
-MAX_PINPOINT_TIME = 5.0
+MAX_PINPOINT_TIME = 10.0
 
 # state machine modes, not all implemented
 class Mode(Enum):
@@ -217,10 +217,10 @@ class Supervisor:
                     self.animal_waypoints.first_detection(t_first)
                     
                 # Once the nominal number of animal measurements is achieved, reset to prior goal pose
-                elif n > ANIMAL_NOM_OBSERVATIONS:
-                    self.x_g = self.pose_goal_backlog[0]
-                    self.y_g = self.pose_goal_backlog[1]
-                    self.theta_g = self.pose_goal_backlog[2]
+                # elif n > ANIMAL_NOM_OBSERVATIONS:
+                #     self.x_g = self.pose_goal_backlog[0]
+                #     self.y_g = self.pose_goal_backlog[1]
+                #     self.theta_g = self.pose_goal_backlog[2]
 
                 # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
                 # wait a fixed amount of time before moving on to prior goal pose
