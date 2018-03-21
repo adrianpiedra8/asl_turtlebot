@@ -17,8 +17,8 @@ import traveling_salesman
 import pdb
 
 # threshold at which we consider the robot at a location
-POS_EPS = .2
-THETA_EPS = .5
+POS_EPS = .1
+THETA_EPS = .3
 
 # time to stop at a stop sign
 STOP_TIME = 3
@@ -123,6 +123,9 @@ class Supervisor:
         # lock waypoints
         self.lock_animal_waypoints = 0
 
+        # status flag for whether navigating to animal while exploring
+        self.nav_to_animal = False
+
         # current mode
         self.mode = Mode.IDLE
         self.modeafterstop = Mode.IDLE
@@ -165,6 +168,7 @@ class Supervisor:
         rotation = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta_g = euler[2]
+        self.theta_g = self.theta_g % (2 * np.pi)
 
     def stop_sign_detected_callback(self, msg):
         """ callback for when the detector has found a stop sign. Note that
@@ -204,17 +208,18 @@ class Supervisor:
                 n = self.animal_waypoints.observations_count[idx] 
                 # If first detection, stop bacon and pinpoint
                 if n == 1:
-                    # Save prior goal pose
-                    self.pose_goal_backlog = [self.x_g, self.y_g, self.theta_g]
-
                     # Stop Bacon in its tracks and pinpoint
                     self.x_g = self.x
                     self.y_g = self.y
             
                     # Set the attitude to "center" detected box in image frame
                     self.theta_g = self.animal_waypoints.animal_theta_g[idx]
+                    self.theta_g = self.theta_g % (2 * np.pi)
+                    # self.theta_g = self.theta
                     t_first = rospy.get_rostime().to_sec()
                     self.animal_waypoints.first_detection(t_first)
+
+                    self.nav_to_animal = True
                     
                 # Once the nominal number of animal measurements is achieved, reset to prior goal pose
                 # elif n > ANIMAL_NOM_OBSERVATIONS:
@@ -224,12 +229,14 @@ class Supervisor:
 
                 # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
                 # wait a fixed amount of time before moving on to prior goal pose
-                print rospy.get_rostime().to_sec()
-                print self.animal_waypoints.time_first_detection[idx]
                 elif rospy.get_rostime().to_sec() > self.animal_waypoints.time_first_detection[idx] + MAX_PINPOINT_TIME:
                     self.x_g = self.pose_goal_backlog[0]
                     self.y_g = self.pose_goal_backlog[1]
                     self.theta_g = self.pose_goal_backlog[2]
+
+                    self.nav_to_animal = False
+
+                print self.x, self.x_g
 
 
     def bicycle_detected_callback(self, msg):
@@ -290,6 +297,7 @@ class Supervisor:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
+            self.theta_g = self.theta_g % (2 * np.pi)
             self.target_animal = animal_type
 
     def init_rescue_animal(self):
@@ -348,6 +356,7 @@ class Supervisor:
         rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta = euler[2]
+        self.theta = self.theta % (2 * np.pi)
 
         self.amcl_init_received = True
 
@@ -357,14 +366,14 @@ class Supervisor:
 
         # use the following for real robot
         exploration_target_waypoints = np.array([
-            # [9.798, 8.728, -2.544],
-            # [10.702, 7.249, -0.936],
-            # [9.874, 6.624, 2.508],
-            # [8.726, 7.992,  2.057],
-            # [10.449, 9.007, 0.483],
-            # [11.586, 7.830, -1.044],
-            # [10.491, 6.584, -3.071],
-            # [8.680, 8.073, 2.155]
+            [9.798, 8.728, -2.544],
+            [10.702, 7.249, -0.936],
+            [9.874, 6.624, 2.508],
+            [8.726, 7.992,  2.057],
+            [10.449, 9.007, 0.483],
+            [11.586, 7.830, -1.044],
+            [10.491, 6.584, -3.071],
+            [8.680, 8.073, 2.155]
 
             # [0.4, 0.3, np.pi/2],
             ])
@@ -392,6 +401,10 @@ class Supervisor:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
+            self.theta_g = self.theta_g % (2 * np.pi)
+            
+            # Save prior goal pose for animal detection
+            self.pose_goal_backlog = [self.x_g, self.y_g, self.theta_g]
 
     def loop(self):
         """ the main loop of the robot. At each iteration, depending on its
@@ -404,6 +417,7 @@ class Supervisor:
             self.y = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
             self.theta = euler[2]
+            self.theta = self.theta % (2 * np.pi)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
@@ -478,7 +492,7 @@ class Supervisor:
             self.lock_animal_waypoints = 0
 
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                self.mode = Mode.IDLE
+                self.mode = Mode.GO_TO_EXPLORE_WAYPOINT
             else:
                 if self.stop_check(): # Returns True if within STOP_MIN_DIST
                     self.mode = Mode.STOP
@@ -558,7 +572,10 @@ class Supervisor:
         elif self.mode == Mode.GO_TO_EXPLORE_WAYPOINT:
             # navigate to the exploration waypoint
             if self.close_to(self.x_g,self.y_g,self.theta_g):
-                self.mode = Mode.EXPLORE
+                if self.nav_to_animal:
+                    self.mode = Mode.GO_TO_EXPLORE_WAYPOINT
+                else:
+                    self.mode = Mode.EXPLORE
             else:
                 if self.stop_check(): # Returns True if within STOP_MIN_DIST
                     self.mode = Mode.STOP

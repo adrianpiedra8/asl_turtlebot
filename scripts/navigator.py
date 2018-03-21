@@ -23,7 +23,7 @@ END_POS_THRESH = .2
 
 # threshold to be far enough into the plan
 # to recompute it
-START_POS_THRESH = .2
+START_POS_THRESH = .02
 
 # thereshold in theta to start moving forward when path following
 THETA_START_THRESH = 0.09
@@ -205,7 +205,6 @@ class Navigator:
         # if there is no plan, we are far from the start of the plan,
         # or the occupancy grid has been updated, update the current plan
         if len(self.current_plan)==0 or not(self.close_to_start_location()) or self.occupancy_updated:
-        # if self.occupancy_updated:
 
             # use A* to compute new plan
             state_min = self.snap_to_grid((-self.plan_horizon, -self.plan_horizon))

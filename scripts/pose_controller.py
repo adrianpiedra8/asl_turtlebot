@@ -58,6 +58,8 @@ class PoseController:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
+        print('pose controller:', self.x, self.x_g, self.theta, self.theta_g)
+
         rel_coords = np.array([self.x-self.x_g, self.y-self.y_g])
         R = np.array([[np.cos(self.theta_g), np.sin(self.theta_g)], [-np.sin(self.theta_g), np.cos(self.theta_g)]])
         rel_coords_rot = np.dot(R,rel_coords)
