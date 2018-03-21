@@ -414,7 +414,7 @@ class Supervisor:
 
         # use the following for real robot
         exploration_target_waypoints = np.array([
-            [10.447, 7.391, -0.996], # exit parking lot
+            [10.476, 9.651, -0.996], # exit parking lot
             [10.007, 8.993, -2.535], # first stop sign on right
             [10.505, 7.226, -0.948], # end of one-way on right side
             [9.862, 6.676, -2.880], # look towards curved forest
