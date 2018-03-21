@@ -286,6 +286,10 @@ class Detector:
 
         self.camera_common(img_laser_ranges, img, img_bgr8)
 
+    ANIMAL_LABELS = set(['cat', 'bird', 'dog', 'horse', 'sheep', 
+                         'cow', 'elephant', 'bear', 'zebra', 'giraffe'])
+    CV2_FONT = cv2.FONT_HERSHEY_SIMPLEX
+
     def camera_common(self, img_laser_ranges, img, img_bgr8):
         
         try:
@@ -315,8 +319,16 @@ class Detector:
                 xcen = int(0.5*(xmax-xmin)+xmin)
                 ycen = int(0.5*(ymax-ymin)+ymin)
 
-                cv2.rectangle(img_bgr8, (xmin,ymin), (xmax,ymax), (255,0,0), 2)
+                draw_color = (255, 0, 0)
 
+                if self.object_labels[cl] in ANIMAL_LABELS:
+                    draw_color = (0, 255, 0)
+                elif self.object_labels[cl] == 'stop_sign':
+                    draw_color = (0, 0, 255)
+
+                cv2.rectangle(img_bgr8, (xmin,ymin), (xmax,ymax), draw_color, 2)
+                cv2.putText(img_bgr8, self.object_labels[cl], (xmin, ymin-10), 
+                            CV2_FONT, .5, draw_color)
                 # computes the vectors in camera frame corresponding to each sides of the box
                 rayleft = self.project_pixel_to_ray(xmin,ycen)
                 rayright = self.project_pixel_to_ray(xmax,ycen)
