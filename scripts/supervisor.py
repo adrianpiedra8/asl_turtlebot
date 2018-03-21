@@ -421,12 +421,12 @@ class Supervisor:
             [8.724, 7.894, 2.169], # move down next to main intersection
             [9.584, 8.309, 0.387], # move next to angled stop sign
             [10.505, 7.226, -0.948], # end of one-way on right side
-            [11.301, 7.102, 0.607], # natural turn left from one-way to side street
+            [11.125, 6.987, 0.550], # natural turn left from one-way to side street
             [11.139, 8.821, 2.178], # move down next to main intersection
             [10.098, 8.857, -2.633], # back to stop sign on right
             [8.875, 8.163, -2.567], # move across main intersection
-            [8.399, 8.897, 0.586], # move towards parking lot
-            [8,756, 9.288, -0.996] # park
+            [8.399, 8.897, 0.586] # move towards parking lot
+            # [8.756, 9.288, -0.996] # park
 
             # Position(10.447, 7.391, 0.000), Orientation(0.000, 0.000, -0.478, 0.879) = Angle: -0.996
             # [9.798, 8.728, -2.544],
