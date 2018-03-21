@@ -53,6 +53,8 @@ class Navigator:
     def __init__(self):
         rospy.init_node('turtlebot_navigator', anonymous=True)
 
+        rospy.wait_for_service('/static_map')
+
         # current state
         self.x = 0.0
         self.y = 0.0

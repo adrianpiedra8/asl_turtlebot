@@ -80,13 +80,8 @@ class Tester:
             marker_pub.publish(marker)
             rate.sleep()
 
-    # def map(self):
-    #     map_pub = rospy.Publisher('/map')
-    #       <node pkg="tf" type="static_transform_publisher" name="my_frame_broadcaster" args="0.343 0.375 0 0 0 -0.476 0.879 map my_frame 100"/>
-
 if __name__ == '__main__':
     s = Tester()
-    # s.rescue_on()
-    s.object_msg()
+    s.rescue_on()
+    # s.object_msg()
     # s.spot()
-    # s.map()

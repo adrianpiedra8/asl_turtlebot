@@ -99,6 +99,12 @@ class AStar(object):
     def find_best_f_score(self):
         return min(self.open_set, key=lambda x: self.f_score[x])
 
+    # Gets the state in closed_set that has the lowest f_score
+    # INPUT: None
+    # OUTPUT: A tuple, the state found in closed_set that has the lowest f_score
+    def find_best_closed_f_score(self):
+        return min(self.closed_set, key=lambda x: self.f_score[x])
+
     # Use the came_from map to reconstruct a path from the initial location
     # to the goal location
     # INPUT: None
@@ -148,6 +154,12 @@ class AStar(object):
             # add x_current to closed set
             self.closed_set.append(x_current)
 
+            # if len(self.open_set)==0:
+            #     x_current = self.find_best_closed_f_score()
+            #     x_current = self.snap_to_grid(x_current)
+            #     self.path = self.reconstruct_path()
+            #     return True
+
             # Iterate over neighbors
             for x_neigh in self.get_neighbors(x_current):
 
@@ -176,7 +188,13 @@ class AStar(object):
                 # set f score
                 self.f_score[x_neigh] = tentative_g_score + self.distance(x_neigh, self.x_goal)
 
-        return False
+            # instead of returning false, set x_goal to the nearest neighbor in the closed set
+            if len(self.open_set)==0:
+                x_current = self.find_best_f_score()
+                self.path = self.reconstruct_path()
+                return True
+
+        # return False
 
 # A 2D state space grid with a set of rectangular obstacles. The grid is fully deterministic
 class DetOccupancyGrid2D(object):

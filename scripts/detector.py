@@ -25,6 +25,10 @@ USE_TF = True
 # minimum score for positive detection
 MIN_SCORE = .5
 
+ANIMAL_LABELS = set(['cat', 'bird', 'dog', 'horse', 'sheep', 
+                             'cow', 'elephant', 'bear', 'zebra', 'giraffe'])
+CV2_FONT = cv2.FONT_HERSHEY_SIMPLEX
+
 def load_object_labels(filename):
     """ loads the coco object readable name """
 
@@ -251,7 +255,7 @@ class Detector:
 
         pos_W = R_B2W.dot(R_C2B).dot(pos_b2o_C) + pos_w2b_W
 
-        # print('obj in camera:', x_hat_C, y_hat_C, z_hat_C)
+        # delta_theta = np.arctan2(pos_W[0] - pos_w2b_W[0], pos_W[1] - pos_w2b_W[1])
         delta_theta = np.arctan2(-x_hat_C, z_hat_C)
         # Goal theta = Current theta + delta theta
         theta_g = pose_w2b_W[2] + delta_theta
@@ -285,10 +289,6 @@ class Detector:
             print(e)
 
         self.camera_common(img_laser_ranges, img, img_bgr8)
-
-    ANIMAL_LABELS = set(['cat', 'bird', 'dog', 'horse', 'sheep', 
-                         'cow', 'elephant', 'bear', 'zebra', 'giraffe'])
-    CV2_FONT = cv2.FONT_HERSHEY_SIMPLEX
 
     def camera_common(self, img_laser_ranges, img, img_bgr8):
         

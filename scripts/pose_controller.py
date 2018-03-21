@@ -20,12 +20,6 @@ V_MAX = 0.25
 # maximim angular velocity
 W_MAX = 2
 
-# x-position tolerance for spinning in place
-X_TOL = 0.1
-
-# y-position tolerance for spinning in place
-Y_TOL = 0.1
-
 class PoseController:
 
     def __init__(self):
@@ -41,6 +35,9 @@ class PoseController:
         self.x_g = 0.0
         self.y_g = 0.0
         self.theta_g = 0.0
+
+        # survey counter
+        self.survey_count = 0
 
         self.trans_listener = tf.TransformListener()
 
@@ -64,27 +61,19 @@ class PoseController:
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
-        print('pose controller:', self.x, self.x_g, self.theta, self.theta_g)
+        rel_coords = np.array([self.x-self.x_g, self.y-self.y_g])
+        R = np.array([[np.cos(self.theta_g), np.sin(self.theta_g)], [-np.sin(self.theta_g), np.cos(self.theta_g)]])
+        rel_coords_rot = np.dot(R,rel_coords)
 
-        # if x and y are already close to goal, then just spin in place
-        if np.abs(self.x - self.x_g) < X_TOL and np.abs(self.y - self.y_g) < Y_TOL:
-            V = 0
-            om = 1
+        th_rot = self.theta-self.theta_g
+        rho = linalg.norm(rel_coords)
+        ang = np.arctan2(rel_coords_rot[1],rel_coords_rot[0])+np.pi
+        angs = wrapToPi(np.array([ang-th_rot, ang]))
+        alpha = angs[0]
+        delta = angs[1]
 
-        else:
-            rel_coords = np.array([self.x-self.x_g, self.y-self.y_g])
-            R = np.array([[np.cos(self.theta_g), np.sin(self.theta_g)], [-np.sin(self.theta_g), np.cos(self.theta_g)]])
-            rel_coords_rot = np.dot(R,rel_coords)
-
-            th_rot = self.theta-self.theta_g
-            rho = linalg.norm(rel_coords)
-            ang = np.arctan2(rel_coords_rot[1],rel_coords_rot[0])+np.pi
-            angs = wrapToPi(np.array([ang-th_rot, ang]))
-            alpha = angs[0]
-            delta = angs[1]
-
-            V = K1*rho*np.cos(alpha)
-            om = K2*alpha + K1*np.sinc(2*alpha/np.pi)*(alpha+K3*delta)
+        V = K1*rho*np.cos(alpha)
+        om = K2*alpha + K1*np.sinc(2*alpha/np.pi)*(alpha+K3*delta)
 
         # Apply saturation limits
         cmd_x_dot = np.sign(V)*min(V_MAX, np.abs(V))

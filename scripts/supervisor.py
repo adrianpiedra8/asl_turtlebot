@@ -17,7 +17,7 @@ import traveling_salesman
 import pdb
 
 # threshold at which we consider the robot at a location
-POS_EPS = .1
+POS_EPS = .3
 THETA_EPS = .3
 
 # time to stop at a stop sign
@@ -50,10 +50,10 @@ BIKE_STOP_TIME = 5
 ANIMAL_MIN_OBSERVATIONS = 3
 
 # Nominal number of observations of an animal before moving on from pinpointing
-ANIMAL_NOM_OBSERVATIONS = 3
+ANIMAL_NOM_OBSERVATIONS = 10
 
 # Maximum amount of time to allow between first detection and moving on to previous goal pose during poinpointing
-MAX_PINPOINT_TIME = 10.0
+MAX_PINPOINT_TIME = 3.0
 
 # state machine modes, not all implemented
 class Mode(Enum):
@@ -124,7 +124,14 @@ class Supervisor:
         self.lock_animal_waypoints = 0
 
         # status flag for whether navigating to animal while exploring
-        self.nav_to_animal = False
+        self.nav_to_animal_CCW = False
+        self.nav_to_animal_CW = False
+
+        # time of starting to spin to animal
+        self.time_of_spin = 0.0
+
+        # status flag to check if current theta is smaller than goal theta
+        self.prev_th_less_than_g = False
 
         # current mode
         self.mode = Mode.IDLE
@@ -208,33 +215,54 @@ class Supervisor:
                 # If first detection, stop bacon and pinpoint
                 if n == 1:
                     # Stop Bacon in its tracks and pinpoint
-                    self.x_g = self.x
-                    self.y_g = self.y
-            
+                    # self.x_g = self.x
+                    # self.y_g = self.y
+                    
                     # Set the attitude to "center" detected box in image frame
-                    self.theta_g = self.animal_waypoints.animal_theta_g[idx]
+                    # self.theta_g = self.animal_waypoints.animal_theta_g[idx]
                     # self.theta_g = self.theta
+
+                    if self.animal_waypoints.animal_theta_g[idx] < self.theta:
+                        self.nav_to_animal_CW = True
+
+                    elif self.animal_waypoints.animal_theta_g[idx] > self.theta:
+                        self.nav_to_animal_CCW = True
+
                     t_first = rospy.get_rostime().to_sec()
+                    self.time_of_spin = t_first
                     self.animal_waypoints.first_detection(t_first)
 
-                    self.nav_to_animal = True
-                    
-                # Once the nominal number of animal measurements is achieved, reset to prior goal pose
-                # elif n > ANIMAL_NOM_OBSERVATIONS:
-                #     self.x_g = self.pose_goal_backlog[0]
-                #     self.y_g = self.pose_goal_backlog[1]
-                #     self.theta_g = self.pose_goal_backlog[2]
+                    # self.nav_to_animal = True
 
-                # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
-                # wait a fixed amount of time before moving on to prior goal pose
-                elif rospy.get_rostime().to_sec() > self.animal_waypoints.time_first_detection[idx] + MAX_PINPOINT_TIME:
+                elif self.close_to(self.x, self.y, self.animal_waypoints.animal_theta_g[idx]):
+                    self.nav_to_animal_CW = False
+                    self.nav_to_animal_CCW = False
                     self.x_g = self.pose_goal_backlog[0]
                     self.y_g = self.pose_goal_backlog[1]
                     self.theta_g = self.pose_goal_backlog[2]
 
-                    self.nav_to_animal = False
+                    # self.nav_to_animal = False
+                    
+                # Once the nominal number of animal measurements is achieved, reset to prior goal pose
+                elif n > ANIMAL_NOM_OBSERVATIONS:
+                    self.nav_to_animal_CW = False
+                    self.nav_to_animal_CCW = False
+                    self.x_g = self.pose_goal_backlog[0]
+                    self.y_g = self.pose_goal_backlog[1]
+                    self.theta_g = self.pose_goal_backlog[2]
 
-                print self.x, self.x_g
+                # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
+                # wait a fixed amount of time before moving on to prior goal pose
+                elif rospy.get_rostime().to_sec() > self.animal_waypoints.time_first_detection[idx] + MAX_PINPOINT_TIME:
+                    self.nav_to_animal_CW = False
+                    self.nav_to_animal_CCW = False
+                    self.x_g = self.pose_goal_backlog[0]
+                    self.y_g = self.pose_goal_backlog[1]
+                    self.theta_g = self.pose_goal_backlog[2]
+
+                    # self.nav_to_animal = False
+
+                    print 'timed out on animal'
 
 
     def bicycle_detected_callback(self, msg):
@@ -257,12 +285,36 @@ class Supervisor:
 
     def stay_idle(self):
         """ sends zero velocity to stay put """
-
         vel_g_msg = Twist()
         self.cmd_vel_publisher.publish(vel_g_msg)
 
+    def turn_CCW(self):
+        """turns the robot left when detecting animal"""
+        twist = Twist()
+        twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+        twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0.1
+        self.cmd_vel_publisher.publish(twist)
+
+    def turn_CW(self):
+        """turns the robot CW when detecting animal"""
+        twist = Twist()
+        twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
+        twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = -0.1
+        self.cmd_vel_publisher.publish(twist)
+
     def close_to(self,x,y,theta):
         """ checks if the robot is at a pose within some threshold """
+        # if (abs(x-self.x)<POS_EPS) and (abs(y-self.y)<POS_EPS):
+        #     # check if angle is within threshold
+        #     if abs(theta-self.theta)<THETA_EPS:
+        #         return True
+        #     # check if angle occured during rotation (between current and previous angle)
+        #     elif (self.theta > theta) and self.prev_th_less_than_g:
+        #         return True
+        #     elif (self.theta < theta) and not self.prev_th_less_than_g:
+        #         return True
+
+        # return False
 
         return (abs(x-self.x)<POS_EPS and abs(y-self.y)<POS_EPS and abs(theta-self.theta)<THETA_EPS)
 
@@ -412,6 +464,10 @@ class Supervisor:
             self.y = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
             self.theta = euler[2]
+
+            if self.theta < self.theta_g:
+                self.prev_th_less_than_g = True
+
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
@@ -499,6 +555,8 @@ class Supervisor:
                 self.modeafterhonk = Mode.NAV
             
         elif self.mode == Mode.PLAN_RESCUE:
+            self.stay_idle()
+
             if not self.init_flag:
                 self.init_plan_rescue()
                 self.init_flag = 1
@@ -564,19 +622,25 @@ class Supervisor:
                 self.mode = Mode.PLAN_RESCUE
 
         elif self.mode == Mode.GO_TO_EXPLORE_WAYPOINT:
-            # navigate to the exploration waypoint
-            if self.close_to(self.x_g,self.y_g,self.theta_g):
-                if self.nav_to_animal:
-                    self.mode = Mode.GO_TO_EXPLORE_WAYPOINT
-                else:
-                    self.mode = Mode.EXPLORE
+            # check if rotating to animal or normal exploration
+            if not rospy.get_rostime().to_sec() > self.time_of_spin + MAX_PINPOINT_TIME:
+                if self.nav_to_animal_CW:
+                    self.turn_CW()
+                elif self.nav_to_animal_CCW:
+                    self.turn_CCW()
             else:
-                if self.stop_check(): # Returns True if within STOP_MIN_DIST
-                    self.mode = Mode.STOP
-                    self.modeafterstop = Mode.GO_TO_EXPLORE_WAYPOINT
+                # navigate to the exploration waypoint
+                if self.close_to(self.x_g,self.y_g,self.theta_g):
+                    # if self.nav_to_animal:
+                    #     self.mode = Mode.GO_TO_EXPLORE_WAYPOINT
+                    self.mode = Mode.EXPLORE
                 else:
-                    # print self.x_g, self.y_g, self.theta_g
-                    self.nav_to_pose()
+                    if self.stop_check(): # Returns True if within STOP_MIN_DIST
+                        self.mode = Mode.STOP
+                        self.modeafterstop = Mode.GO_TO_EXPLORE_WAYPOINT
+                    else:
+                        # print self.x_g, self.y_g, self.theta_g
+                        self.nav_to_pose()
 
             if self.honk:
                 self.mode = Mode.BIKE_STOP
