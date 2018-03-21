@@ -426,7 +426,7 @@ class Supervisor:
             [10.098, 8.857, -2.633], # back to stop sign on right
             [8.875, 8.163, -2.567], # move across main intersection
             [8.399, 8.897, 0.586], # move towards parking lot
-            [9.183, 9.508, -0.980] # park
+            [8,756, 9.288, -0.996] # park
 
             # Position(10.447, 7.391, 0.000), Orientation(0.000, 0.000, -0.478, 0.879) = Angle: -0.996
             # [9.798, 8.728, -2.544],
