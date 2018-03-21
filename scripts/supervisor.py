@@ -214,7 +214,7 @@ class Supervisor:
                     # Set the attitude to "center" detected box in image frame
                     self.theta_g = self.animal_waypoints.animal_theta_g[idx]
                     t_first = rospy.get_rostime().to_sec()
-                    self.animal_waypoints.first_detection(idx, t_first)
+                    self.animal_waypoints.first_detection(t_first)
                     
                 # Once the nominal number of animal measurements is achieved, reset to prior goal pose
                 elif n > ANIMAL_NOM_OBSERVATIONS:
@@ -355,10 +355,10 @@ class Supervisor:
 
         # use the following for real robot
         exploration_target_waypoints = np.array([
-            [0.4, 0.3, np.pi/2],
-            [1.4, 2.7, np.pi/2],
-            [2.7, 1.0, 3*np.pi/2],
-            [1.5, 0.5, np.pi/2]
+            [0.4, 0.3, np.pi/2]
+            # [1.4, 2.7, np.pi/2],
+            # [2.7, 1.0, 3*np.pi/2],
+            # [1.5, 0.5, np.pi/2]
             ])
 
         # use the following for simulation
@@ -413,7 +413,8 @@ class Supervisor:
         if self.mode == Mode.IDLE:
             if self.amcl_init_received == True:
                 self.amcl_init_received = False
-                self.mode = Mode.EXPLORE
+                # self.mode = Mode.EXPLORE
+                self.mode = Mode.NAV
 
             else:
                 # send zero velocity
