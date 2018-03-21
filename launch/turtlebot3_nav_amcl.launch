@@ -48,5 +48,5 @@
   <!-- <node pkg="asl_turtlebot" type="navigator.py" name="turtlebot_navigator" /> -->
   <!-- <node pkg="asl_turtlebot" type="detector.py" name="turtlebot_detector" /> -->
 
-  <!-- <node pkg="sound_play" type="soundplay_node.py" name="sound_player" /> -->
+  <node pkg="sound_play" type="soundplay_node.py" name="sound_player" />
 </launch>

@@ -106,51 +106,34 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_camera:
-          Value: false
         base_footprint:
           Value: false
-        base_link:
+        camera:
           Value: true
-        base_scan:
-          Value: false
-        caster_back_link:
-          Value: false
-        imu_link:
-          Value: false
         map:
           Value: true
         my_frame:
           Value: false
         odom:
           Value: false
-        wheel_left_link:
-          Value: false
-        wheel_right_link:
-          Value: false
+        raspicam:
+          Value: true
+        velodyne:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          my_frame:
-            {}
-          odom:
-            base_footprint:
-              base_link:
-                base_camera:
-                  {}
-                base_scan:
-                  {}
-                caster_back_link:
-                  {}
-                imu_link:
-                  {}
-                wheel_left_link:
-                  {}
-                wheel_right_link:
+        my_frame:
+          map:
+            odom:
+              base_footprint:
+                raspicam:
+                  camera:
+                    {}
+                velodyne:
                   {}
       Update Interval: 0
       Value: true
@@ -191,7 +174,7 @@ Visualization Manager:
       Marker Topic: /markers/stop_sign0
       Name: Marker
       Namespaces:
-        {}
+        stop_sign: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -199,7 +182,7 @@ Visualization Manager:
       Marker Topic: /markers/stop_sign1
       Name: Marker
       Namespaces:
-        {}
+        stop_sign: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -278,7 +261,7 @@ Visualization Manager:
       Axes Radius: 0.00999999978
       Class: rviz/PoseArray
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.0700000003
       Head Radius: 0.0299999993
       Name: PoseArray
@@ -287,7 +270,7 @@ Visualization Manager:
       Shape: Arrow (Flat)
       Topic: /particlecloud
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz/Polygon
       Color: 25; 255; 0
@@ -359,9 +342,9 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 1.07719938e-35
+      Max Intensity: 100
       Min Color: 0; 0; 0
-      Min Intensity: 0
+      Min Intensity: 3
       Name: LaserScan
       Position Transformer: XYZ
       Queue Size: 10
@@ -398,7 +381,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.0900000408
+      Angle: 0.00500001851
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
@@ -408,11 +391,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 84.9440765
+      Scale: 132.859772
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 1.32311141
-      Y: 1.52081943
+      X: 9.76740074
+      Y: 9.15204144
     Saved: ~
 Window Geometry:
   Displays:
