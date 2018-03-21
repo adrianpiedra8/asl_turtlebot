@@ -173,8 +173,8 @@ class AnimalWaypoints:
             
             return index
 
-    def first_detection(self, index, t_first):
-        self.time_first_detection[index] = t_first
+    def first_detection(self, t_first):
+        self.time_first_detection = np.append(self.time_first_detection, t_first)
 
     def update_location(self, index, observation, pose, bbox_height):
         prev = self.locations[index]
