@@ -8,6 +8,11 @@
     </include>
     <node pkg="asl_turtlebot" type="tb3_image_rotate_and_crop.py" name="image_rotater" />
 
+    <!-- Map server -->
+    <arg name="map_file" default="$(find asl_turtlebot)/slam_map.yaml"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+    </node>
+
     <node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="0.343 0.375 0 0 0 -0.476 0.879 my_frame map 100"/>
     <node pkg="tf" type="static_transform_publisher" name="camera_true_broadcaster" args="0.03 0 0.067 0.707107 0 0.707107 0 base_footprint raspicam 100" />
     <node pkg="tf" type="static_transform_publisher" name="camera_broadcaster" args="0 0 0 0 0 0.707107 0.707107 raspicam camera 100" />
