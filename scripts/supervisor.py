@@ -168,7 +168,6 @@ class Supervisor:
         rotation = [msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta_g = euler[2]
-        self.theta_g = self.theta_g % (2 * np.pi)
 
     def stop_sign_detected_callback(self, msg):
         """ callback for when the detector has found a stop sign. Note that
@@ -214,7 +213,6 @@ class Supervisor:
             
                     # Set the attitude to "center" detected box in image frame
                     self.theta_g = self.animal_waypoints.animal_theta_g[idx]
-                    self.theta_g = self.theta_g % (2 * np.pi)
                     # self.theta_g = self.theta
                     t_first = rospy.get_rostime().to_sec()
                     self.animal_waypoints.first_detection(t_first)
@@ -297,7 +295,6 @@ class Supervisor:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
-            self.theta_g = self.theta_g % (2 * np.pi)
             self.target_animal = animal_type
 
     def init_rescue_animal(self):
@@ -356,7 +353,6 @@ class Supervisor:
         rotation = [msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]
         euler = tf.transformations.euler_from_quaternion(rotation)
         self.theta = euler[2]
-        self.theta = self.theta % (2 * np.pi)
 
         self.amcl_init_received = True
 
@@ -401,7 +397,6 @@ class Supervisor:
             self.x_g = waypoint[0]
             self.y_g = waypoint[1]
             self.theta_g = waypoint[2]
-            self.theta_g = self.theta_g % (2 * np.pi)
             
             # Save prior goal pose for animal detection
             self.pose_goal_backlog = [self.x_g, self.y_g, self.theta_g]
@@ -417,7 +412,6 @@ class Supervisor:
             self.y = translation[1]
             euler = tf.transformations.euler_from_quaternion(rotation)
             self.theta = euler[2]
-            self.theta = self.theta % (2 * np.pi)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
 
