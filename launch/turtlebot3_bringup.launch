@@ -1,5 +1,5 @@
 <launch>
-    <arg name="camera_fps" default="5" />
+    <arg name="camera_fps" default="30" />
 
     <include file="$(find turtlebot3_bringup)/launch/turtlebot3_core.launch" />
     <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch" />

@@ -224,6 +224,8 @@ class Supervisor:
 
                 # In case the nominal number of measurements never occurs (likely from spurious objection detected initially),
                 # wait a fixed amount of time before moving on to prior goal pose
+                print rospy.get_rostime().to_sec()
+                print self.animal_waypoints.time_first_detection[idx]
                 elif rospy.get_rostime().to_sec() > self.animal_waypoints.time_first_detection[idx] + MAX_PINPOINT_TIME:
                     self.x_g = self.pose_goal_backlog[0]
                     self.y_g = self.pose_goal_backlog[1]
@@ -355,14 +357,15 @@ class Supervisor:
 
         # use the following for real robot
         exploration_target_waypoints = np.array([
-            [9.798, 8.728, -2.544],
-            [10.702, 7.249, -0.936],
-            [9.874, 6.624, 2.508],
-            [8.726, 7.992,  2.057],
-            [10.449, 9.007, 0.483],
-            [11.586, 7.830, -1.044],
-            [10.491, 6.584, -3.071],
-            [8.680, 8.073, 2.155]
+            # [9.798, 8.728, -2.544],
+            # [10.702, 7.249, -0.936],
+            # [9.874, 6.624, 2.508],
+            # [8.726, 7.992,  2.057],
+            # [10.449, 9.007, 0.483],
+            # [11.586, 7.830, -1.044],
+            # [10.491, 6.584, -3.071],
+            # [8.680, 8.073, 2.155]
+
             # [0.4, 0.3, np.pi/2],
             ])
 
