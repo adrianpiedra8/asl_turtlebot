@@ -188,13 +188,13 @@ class AStar(object):
                 # set f score
                 self.f_score[x_neigh] = tentative_g_score + self.distance(x_neigh, self.x_goal)
 
-            # instead of returning false, set x_goal to the nearest neighbor in the closed set
-            if len(self.open_set)==0:
-                x_current = self.find_best_f_score()
-                self.path = self.reconstruct_path()
-                return True
+            # # instead of returning false, set x_goal to the nearest neighbor in the closed set
+            # if len(self.open_set)==0:
+            #     x_current = self.find_best_f_score()
+            #     self.path = self.reconstruct_path()
+            #     return True
 
-        # return False
+        return False
 
 # A 2D state space grid with a set of rectangular obstacles. The grid is fully deterministic
 class DetOccupancyGrid2D(object):
